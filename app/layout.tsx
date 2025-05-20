@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Nunito } from "next/font/google"
 import "./globals.css"
 import { AuthListener } from "@/components/auth-listener"
+import { MainLayout } from "@/components/main-layout"
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${nunito.variable} font-nunito`}>
         <AuthListener /> {/* Add the auth listener here */}
-        {children}
+        <MainLayout>
+          {children}
+        </MainLayout>
       </body>
     </html>
   )

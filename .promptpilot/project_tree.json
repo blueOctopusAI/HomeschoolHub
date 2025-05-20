@@ -87,6 +87,21 @@
         "parentKey": "app"
       },
       {
+        "key": "app/compliance",
+        "title": "compliance",
+        "children": [
+          {
+            "key": "app/compliance/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/compliance"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/dashboard",
         "title": "dashboard",
         "children": [
@@ -117,6 +132,21 @@
         "parentKey": "app"
       },
       {
+        "key": "app/portfolio",
+        "title": "portfolio",
+        "children": [
+          {
+            "key": "app/portfolio/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/portfolio"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/reports",
         "title": "reports",
         "children": [
@@ -126,6 +156,21 @@
             "children": [],
             "isLeaf": true,
             "parentKey": "app/reports"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/settings",
+        "title": "settings",
+        "children": [
+          {
+            "key": "app/settings/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/settings"
           }
         ],
         "isLeaf": false,

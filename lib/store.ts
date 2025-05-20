@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 import { User } from '@supabase/supabase-js'
 
 // Define types
-export type View = "dashboard" | "calendar" | "assignments" | "checklist" | "transcript" | "settings"
+export type View = "dashboard" | "calendar" | "assignments" | "checklist" | "reports" | "portfolio" | "compliance" | "transcript" | "settings"
 
 export type Student = {
   id: string
@@ -406,7 +406,14 @@ export const useSelectedStudent = () => useStore((state) => state.selectedStuden
 export const useCourses = () => useStore((state) => state.courses)
 export const useAssignments = () => useStore((state) => state.assignments)
 export const useCurrentDate = () => useStore((state) => state.currentDate)
-export const useAuth = () => useStore((state) => ({ 
-  user: state.authUser, 
-  isLoading: state.isAuthLoading 
-}))
+
+// Split auth selectors to avoid memoization issues
+export const useAuthUser = () => useStore((state) => state.authUser)
+export const useAuthLoading = () => useStore((state) => state.isAuthLoading)
+
+// Combined auth hook
+export const useAuth = () => {
+  const user = useAuthUser()
+  const isLoading = useAuthLoading()
+  return { user, isLoading }
+}
