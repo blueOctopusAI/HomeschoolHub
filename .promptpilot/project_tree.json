@@ -4,6 +4,29 @@
     "title": "app",
     "children": [
       {
+        "key": "app/api",
+        "title": "api",
+        "children": [
+          {
+            "key": "app/api/health",
+            "title": "health",
+            "children": [
+              {
+                "key": "app/api/health/route.ts",
+                "title": "route.ts",
+                "children": [],
+                "isLeaf": true,
+                "parentKey": "app/api/health"
+              }
+            ],
+            "isLeaf": false,
+            "parentKey": "app/api"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/assignments",
         "title": "assignments",
         "children": [
@@ -834,6 +857,13 @@
   {
     "key": "components.json",
     "title": "components.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "next-env.d.ts",
+    "title": "next-env.d.ts",
     "children": [],
     "isLeaf": true,
     "parentKey": null
