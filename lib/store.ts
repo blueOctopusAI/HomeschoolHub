@@ -69,6 +69,7 @@ type Store = {
   lessons: Lesson[]
   courses: Course[]
   assignments: Assignment[]
+  isLoading: boolean
 
   // Actions
   setCurrentView: (view: View) => void
@@ -292,6 +293,7 @@ export const useStore = create<Store>((set) => ({
   lessons: sampleLessons,
   courses: sampleCourses,
   assignments: sampleAssignments,
+  isLoading: false,
 
   // Actions
   setCurrentView: (view) => set({ currentView: view }),

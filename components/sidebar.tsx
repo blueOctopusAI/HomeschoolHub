@@ -1,6 +1,6 @@
 "use client"
 
-import { useAppContext } from "@/lib/context"
+import { useStore } from "@/lib/store"
 import { Logo } from "./logo"
 import { cn } from "@/lib/utils"
 import {
@@ -14,9 +14,15 @@ import {
   Briefcase,
   ClipboardCheck,
 } from "lucide-react"
+import { type View } from "@/lib/store"
 
 export function Sidebar() {
-  const { currentView, setCurrentView, students, selectedStudent, setSelectedStudent } = useAppContext()
+  // Get state and actions from Zustand store
+  const currentView = useStore((state) => state.currentView)
+  const setCurrentView = useStore((state) => state.setCurrentView)
+  const students = useStore((state) => state.students)
+  const selectedStudent = useStore((state) => state.selectedStudent)
+  const setSelectedStudent = useStore((state) => state.setSelectedStudent)
 
   const navItems = [
     {
@@ -77,7 +83,7 @@ export function Sidebar() {
           {navItems.map((item) => (
             <li key={item.value}>
               <button
-                onClick={() => setCurrentView(item.value as any)}
+                onClick={() => setCurrentView(item.value as View)}
                 className={cn(
                   "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
                   currentView === item.value
