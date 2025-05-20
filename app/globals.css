@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cream-50: #faf9f5;
+  --cream-100: #f5f3e9;
+  --cream-200: #ebe7d4;
+
+  /* Primary sage/green colors */
+  --sage-50: #f0f5f2;
+  --sage-100: #e9f1e7;
+  --sage-200: #d8e8d2;
+  --sage-300: #a5cda5;
+  --sage-400: #7fb47f;
+  --sage-500: #5e8b7e;
+  --sage-600: #4a6e63;
+  --sage-700: #3d5a51;
+  --sage-800: #334842;
+  --sage-900: #2c3c37;
+
+  /* Tuesday colors - orange/brown */
+  --orange-50: #f5e6d8;
+  --orange-100: #f0d7c2;
+  --orange-500: #b38867;
+  --orange-600: #9a7054;
+
+  /* Wednesday colors - blue */
+  --blue-50: #e6f0f9;
+  --blue-100: #d0e4f5;
+  --blue-500: #5a87ad;
+  --blue-600: #4a7090;
+
+  /* Thursday colors - pink */
+  --pink-50: #f9e6eb;
+  --pink-100: #f5d0da;
+  --pink-500: #c25e7c;
+  --pink-600: #a54e69;
+
+  /* Purple colors - Friday */
+  --purple-50: #f0e6f5;
+  --purple-100: #e5d0f0;
+  --purple-500: #8a5aad;
+  --purple-600: #744a91;
+}
+
+body {
+  background-color: var(--cream-50);
+  color: #333;
+  font-family: var(--font-nunito), sans-serif;
+}
+
+/* Custom button styles */
+.btn-sage {
+  background-color: var(--sage-500);
+  color: white;
+}
+
+.btn-sage:hover {
+  background-color: var(--sage-600);
+}
+
+.btn-outline-sage {
+  border-color: var(--sage-300);
+  color: var(--sage-500);
+}
+
+.btn-outline-sage:hover {
+  background-color: var(--sage-50);
+  color: var(--sage-600);
+}
+
+/* Day-specific button styles */
+.btn-monday {
+  background-color: var(--sage-500);
+  color: white;
+}
+
+.btn-tuesday {
+  background-color: var(--orange-500);
+  color: white;
+}
+
+.btn-wednesday {
+  background-color: var(--blue-500);
+  color: white;
+}
+
+.btn-thursday {
+  background-color: var(--pink-500);
+  color: white;
+}
+
+.btn-friday {
+  background-color: var(--purple-500);
+  color: white;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background-color: white;
+  }
+
+  .sidebar,
+  .topbar {
+    display: none !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Print styles for progress report */
+  @page {
+    margin: 1cm;
+  }
+
+  table {
+    break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid;
+    break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Portfolio print styles */
+  .portfolio-grid {
+    display: block !important;
+  }
+
+  .portfolio-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem;
+  }
+
+  .portfolio-actions {
+    display: none !important;
+  }
+}

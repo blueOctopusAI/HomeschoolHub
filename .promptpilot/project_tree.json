@@ -1,0 +1,890 @@
+[
+  {
+    "key": "app",
+    "title": "app",
+    "children": [
+      {
+        "key": "app/assignments",
+        "title": "assignments",
+        "children": [
+          {
+            "key": "app/assignments/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/assignments"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/calendar",
+        "title": "calendar",
+        "children": [
+          {
+            "key": "app/calendar/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/checklist",
+        "title": "checklist",
+        "children": [
+          {
+            "key": "app/checklist/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/checklist"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/dashboard",
+        "title": "dashboard",
+        "children": [
+          {
+            "key": "app/dashboard/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/dashboard"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/reports",
+        "title": "reports",
+        "children": [
+          {
+            "key": "app/reports/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/reports"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/transcript",
+        "title": "transcript",
+        "children": [
+          {
+            "key": "app/transcript/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/transcript"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/actions.ts",
+        "title": "actions.ts",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/globals.css",
+        "title": "globals.css",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/layout.tsx",
+        "title": "layout.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/page.tsx",
+        "title": "page.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "app"
+      }
+    ],
+    "isLeaf": false,
+    "parentKey": null
+  },
+  {
+    "key": "components",
+    "title": "components",
+    "children": [
+      {
+        "key": "components/ui",
+        "title": "ui",
+        "children": [
+          {
+            "key": "components/ui/accordion.tsx",
+            "title": "accordion.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/alert-dialog.tsx",
+            "title": "alert-dialog.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/alert.tsx",
+            "title": "alert.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/aspect-ratio.tsx",
+            "title": "aspect-ratio.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/avatar.tsx",
+            "title": "avatar.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/badge.tsx",
+            "title": "badge.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/breadcrumb.tsx",
+            "title": "breadcrumb.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/button.tsx",
+            "title": "button.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/calendar.tsx",
+            "title": "calendar.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/card.tsx",
+            "title": "card.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/carousel.tsx",
+            "title": "carousel.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/chart.tsx",
+            "title": "chart.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/checkbox.tsx",
+            "title": "checkbox.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/collapsible.tsx",
+            "title": "collapsible.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/command.tsx",
+            "title": "command.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/context-menu.tsx",
+            "title": "context-menu.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/dialog.tsx",
+            "title": "dialog.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/drawer.tsx",
+            "title": "drawer.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/dropdown-menu.tsx",
+            "title": "dropdown-menu.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/form.tsx",
+            "title": "form.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/hover-card.tsx",
+            "title": "hover-card.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/input-otp.tsx",
+            "title": "input-otp.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/input.tsx",
+            "title": "input.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/label.tsx",
+            "title": "label.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/menubar.tsx",
+            "title": "menubar.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/navigation-menu.tsx",
+            "title": "navigation-menu.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/pagination.tsx",
+            "title": "pagination.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/popover.tsx",
+            "title": "popover.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/progress.tsx",
+            "title": "progress.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/radio-group.tsx",
+            "title": "radio-group.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/resizable.tsx",
+            "title": "resizable.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/scroll-area.tsx",
+            "title": "scroll-area.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/select.tsx",
+            "title": "select.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/separator.tsx",
+            "title": "separator.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/sheet.tsx",
+            "title": "sheet.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/sidebar.tsx",
+            "title": "sidebar.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/skeleton.tsx",
+            "title": "skeleton.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/slider.tsx",
+            "title": "slider.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/sonner.tsx",
+            "title": "sonner.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/switch.tsx",
+            "title": "switch.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/table.tsx",
+            "title": "table.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/tabs.tsx",
+            "title": "tabs.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/textarea.tsx",
+            "title": "textarea.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/toast.tsx",
+            "title": "toast.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/toaster.tsx",
+            "title": "toaster.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/toggle-group.tsx",
+            "title": "toggle-group.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/toggle.tsx",
+            "title": "toggle.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/tooltip.tsx",
+            "title": "tooltip.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/use-mobile.tsx",
+            "title": "use-mobile.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          },
+          {
+            "key": "components/ui/use-toast.ts",
+            "title": "use-toast.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "components/ui"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/add-course-modal.tsx",
+        "title": "add-course-modal.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/assignments-view.tsx",
+        "title": "assignments-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/calendar-app.tsx",
+        "title": "calendar-app.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/calendar-grid.tsx",
+        "title": "calendar-grid.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/calendar-header.tsx",
+        "title": "calendar-header.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/calendar-view.tsx",
+        "title": "calendar-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/checklist-generator.tsx",
+        "title": "checklist-generator.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/checklist-view.tsx",
+        "title": "checklist-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/compliance-view.tsx",
+        "title": "compliance-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/create-assignment-modal.tsx",
+        "title": "create-assignment-modal.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/dashboard-view.tsx",
+        "title": "dashboard-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/event-form.tsx",
+        "title": "event-form.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/homeschool-calendar.tsx",
+        "title": "homeschool-calendar.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/layout.tsx",
+        "title": "layout.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/lesson-modal.tsx",
+        "title": "lesson-modal.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/loading.tsx",
+        "title": "loading.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/logo.tsx",
+        "title": "logo.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/main-layout.tsx",
+        "title": "main-layout.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/portfolio-builder-view.tsx",
+        "title": "portfolio-builder-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/printable-checklist.tsx",
+        "title": "printable-checklist.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/printable-transcript.tsx",
+        "title": "printable-transcript.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/progress-report-view.tsx",
+        "title": "progress-report-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/seed-database-button.tsx",
+        "title": "seed-database-button.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/settings-view.tsx",
+        "title": "settings-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/sidebar.tsx",
+        "title": "sidebar.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/theme-provider.tsx",
+        "title": "theme-provider.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/top-bar.tsx",
+        "title": "top-bar.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/topbar.tsx",
+        "title": "topbar.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/transcript-view.tsx",
+        "title": "transcript-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/update-assignment-modal.tsx",
+        "title": "update-assignment-modal.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/weekly-calendar.tsx",
+        "title": "weekly-calendar.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      }
+    ],
+    "isLeaf": false,
+    "parentKey": null
+  },
+  {
+    "key": "hooks",
+    "title": "hooks",
+    "children": [
+      {
+        "key": "hooks/use-mobile.tsx",
+        "title": "use-mobile.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "hooks"
+      },
+      {
+        "key": "hooks/use-toast.ts",
+        "title": "use-toast.ts",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "hooks"
+      }
+    ],
+    "isLeaf": false,
+    "parentKey": null
+  },
+  {
+    "key": "public",
+    "title": "public",
+    "children": [
+      {
+        "key": "public/images",
+        "title": "images",
+        "children": [
+          {
+            "key": "public/images/flower-logo.png",
+            "title": "flower-logo.png",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "public/images"
+          },
+          {
+            "key": "public/images/homeschool-hub-logo.png",
+            "title": "homeschool-hub-logo.png",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "public/images"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/diverse-students-studying.png",
+        "title": "diverse-students-studying.png",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/homeschool-hub-logo.png",
+        "title": "homeschool-hub-logo.png",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/placeholder-logo.png",
+        "title": "placeholder-logo.png",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/placeholder-logo.svg",
+        "title": "placeholder-logo.svg",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/placeholder-user.jpg",
+        "title": "placeholder-user.jpg",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/placeholder.jpg",
+        "title": "placeholder.jpg",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
+        "key": "public/placeholder.svg",
+        "title": "placeholder.svg",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      }
+    ],
+    "isLeaf": false,
+    "parentKey": null
+  },
+  {
+    "key": "styles",
+    "title": "styles",
+    "children": [
+      {
+        "key": "styles/globals.css",
+        "title": "globals.css",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "styles"
+      }
+    ],
+    "isLeaf": false,
+    "parentKey": null
+  },
+  {
+    "key": ".env.local",
+    "title": ".env.local",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "components.json",
+    "title": "components.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "next.config.mjs",
+    "title": "next.config.mjs",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "package.json",
+    "title": "package.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "pnpm-lock.yaml",
+    "title": "pnpm-lock.yaml",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "postcss.config.mjs",
+    "title": "postcss.config.mjs",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "README.md",
+    "title": "README.md",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "tailwind.config.ts",
+    "title": "tailwind.config.ts",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "tsconfig.json",
+    "title": "tsconfig.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  }
+]
