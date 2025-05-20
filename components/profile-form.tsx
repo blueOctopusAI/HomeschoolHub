@@ -1,6 +1,7 @@
 "use client"
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useActionState } from "react"
+import { useFormStatus } from "react-dom"
 import { addProfile } from "../app/actions"
 
 // Loading button component with pending state
@@ -24,7 +25,7 @@ const initialState = {
 }
 
 export function ProfileForm() {
-  const [state, formAction] = useFormState(addProfile, initialState)
+  const [state, formAction] = useActionState(addProfile, initialState)
   
   return (
     <div>
