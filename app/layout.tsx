@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Nunito } from "next/font/google"
 import "./globals.css"
+import { AuthListener } from "@/components/auth-listener"
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -12,7 +13,7 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Homeschool Hub",
   description: "Organize your homeschool schedule and activities",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${nunito.variable} font-nunito`}>
+        <AuthListener /> {/* Add the auth listener here */}
         {children}
       </body>
     </html>

@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { v4 as uuidv4 } from "uuid"
+import { User } from '@supabase/supabase-js'
 
 // Define types
 export type View = "dashboard" | "calendar" | "assignments" | "checklist" | "transcript" | "settings"
@@ -70,6 +71,10 @@ type Store = {
   courses: Course[]
   assignments: Assignment[]
   isLoading: boolean
+  
+  // Auth state
+  authUser: User | null
+  isAuthLoading: boolean
 
   // Actions
   setCurrentView: (view: View) => void
@@ -92,6 +97,10 @@ type Store = {
   addAssignment: (assignment: Omit<Assignment, "id">) => void
   updateAssignment: (id: string, updates: Partial<Assignment>) => void
   deleteAssignment: (id: string) => void
+  
+  // Auth actions
+  setAuthUser: (user: User | null) => void
+  setIsAuthLoading: (isLoading: boolean) => void
 }
 
 // Sample data
@@ -295,6 +304,10 @@ export const useStore = create<Store>((set) => ({
   courses: sampleCourses,
   assignments: sampleAssignments,
   isLoading: false,
+  
+  // Auth state (new)
+  authUser: null,
+  isAuthLoading: true,
 
   // Actions
   setCurrentView: (view) => set({ currentView: view }),
@@ -381,6 +394,10 @@ export const useStore = create<Store>((set) => ({
     set((state) => ({
       assignments: state.assignments.filter((assignment) => assignment.id !== id),
     })),
+    
+  // Auth actions (new)
+  setAuthUser: (user) => set({ authUser: user }),
+  setIsAuthLoading: (isLoading) => set({ isAuthLoading: isLoading }),
 }))
 
 // Helper functions
@@ -389,3 +406,7 @@ export const useSelectedStudent = () => useStore((state) => state.selectedStuden
 export const useCourses = () => useStore((state) => state.courses)
 export const useAssignments = () => useStore((state) => state.assignments)
 export const useCurrentDate = () => useStore((state) => state.currentDate)
+export const useAuth = () => useStore((state) => ({ 
+  user: state.authUser, 
+  isLoading: state.isAuthLoading 
+}))
