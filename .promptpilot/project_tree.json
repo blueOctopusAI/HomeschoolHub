@@ -570,6 +570,13 @@
         "parentKey": "components"
       },
       {
+        "key": "components/auth-listener.tsx",
+        "title": "auth-listener.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
         "key": "components/calendar-app.tsx",
         "title": "calendar-app.tsx",
         "children": [],
@@ -879,6 +886,13 @@
   {
     "key": "components.json",
     "title": "components.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "middleware.ts",
+    "title": "middleware.ts",
     "children": [],
     "isLeaf": true,
     "parentKey": null

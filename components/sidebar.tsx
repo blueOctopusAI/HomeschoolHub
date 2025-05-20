@@ -15,6 +15,8 @@ import {
   ClipboardCheck,
 } from "lucide-react"
 import { type View } from "@/lib/store"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export function Sidebar() {
   // Get state and actions from Zustand store
@@ -23,6 +25,18 @@ export function Sidebar() {
   const students = useStore((state) => state.students)
   const selectedStudent = useStore((state) => state.selectedStudent)
   const setSelectedStudent = useStore((state) => state.setSelectedStudent)
+  
+  const router = useRouter()
+  const pathname = usePathname()
+  
+  // Sync current view with the current path
+  useEffect(() => {
+    // Extract view from pathname
+    const path = pathname.split('/')[1] || 'dashboard'
+    if (path && path !== currentView) {
+      setCurrentView(path as View)
+    }
+  }, [pathname, currentView, setCurrentView])
 
   const navItems = [
     {
@@ -72,6 +86,11 @@ export function Sidebar() {
     },
   ]
 
+  const handleNavigation = (view: View) => {
+    setCurrentView(view)
+    router.push(`/${view}`)
+  }
+
   return (
     <div className="fixed top-0 left-0 h-full w-[220px] bg-white border-r border-[#5e8b7e]/10 flex flex-col no-print">
       <div className="p-4">
@@ -83,7 +102,7 @@ export function Sidebar() {
           {navItems.map((item) => (
             <li key={item.value}>
               <button
-                onClick={() => setCurrentView(item.value as View)}
+                onClick={() => handleNavigation(item.value as View)}
                 className={cn(
                   "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
                   currentView === item.value

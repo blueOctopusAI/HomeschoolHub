@@ -2,6 +2,7 @@
 
 // Import the Supabase server client
 import { createSupabaseServerActionClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 // Define the ActionResult interface
 export interface ActionResult {
@@ -42,8 +43,8 @@ export async function login(
     }
 
     // Create Supabase client
-    const supabase = createSupabaseServerActionClient()
-
+    const supabase = await createSupabaseServerActionClient()
+    
     // Sign in with email and password
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -57,12 +58,23 @@ export async function login(
       }
     }
 
-    // Success
+    // Success - redirect to dashboard
+    // This will throw a NEXT_REDIRECT error, which is expected
+    redirect('/dashboard')
+    
+    // This return is theoretically unreachable due to the redirect
     return {
       success: true,
       message: "Successfully logged in",
     }
   } catch (error) {
+    // Filter out NEXT_REDIRECT errors as they're expected
+    if (error instanceof Error && 'digest' in error && error.digest?.includes('NEXT_REDIRECT')) {
+      // This is an expected redirect, not a real error
+      throw error; // Re-throw to let Next.js handle the redirect
+    }
+    
+    // Log only actual errors
     console.error("Login error:", error)
     return {
       success: false,
@@ -104,7 +116,7 @@ export async function signup(
     }
 
     // Create Supabase client
-    const supabase = createSupabaseServerActionClient()
+    const supabase = await createSupabaseServerActionClient()
 
     // Sign up with email and password
     const { error } = await supabase.auth.signUp({
@@ -139,27 +151,27 @@ export async function signup(
 }
 
 // Logout server action
-export async function logout(): Promise<ActionResult> {
+export async function signOut() {
   try {
-    const supabase = createSupabaseServerActionClient()
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      return {
-        success: false,
-        message: error.message,
-      }
-    }
-
-    return {
-      success: true,
-      message: "Successfully logged out",
-    }
+    const supabase = await createSupabaseServerActionClient()
+    await supabase.auth.signOut()
+    
+    // Always redirect to login page regardless of errors
+    redirect('/login')
   } catch (error) {
-    console.error("Logout error:", error)
-    return {
-      success: false,
-      message: "An unexpected error occurred",
+    // Filter out NEXT_REDIRECT errors as they're expected
+    if (error instanceof Error && 'digest' in error && error.digest?.includes('NEXT_REDIRECT')) {
+      // This is an expected redirect, not a real error
+      throw error; // Re-throw to let Next.js handle the redirect
     }
+    
+    // Log only actual errors
+    console.error("Logout error:", error)
+    
+    // If we get here, try to force a redirect anyway
+    redirect('/login')
   }
 }
+
+// Alias for logout
+export const logout = signOut;

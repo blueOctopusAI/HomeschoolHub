@@ -1,6 +1,6 @@
 // middleware.ts
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -18,8 +18,7 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
-          // If the cookie is set, update the request and response cookies
+        set(name: string, value: string, options) {
           request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
             request: {
@@ -28,8 +27,7 @@ export async function middleware(request: NextRequest) {
           });
           response.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options: CookieOptions) {
-          // If the cookie is removed, update the request and response cookies
+        remove(name: string, options) {
           request.cookies.set({ name, value: '', ...options });
           response = NextResponse.next({
             request: {
@@ -52,7 +50,6 @@ export async function middleware(request: NextRequest) {
   // Include the root path in protected routes since it contains profile management functionality
   const protectedRoutes = ['/', '/dashboard', '/calendar', '/assignments', '/checklist', '/reports', '/transcript', '/settings', '/portfolio', '/compliance'];
   const authRoutes = ['/login', '/signup'];
-  // No public routes anymore since root is now protected
   
   // If user is not logged in and trying to access a protected route (including root '/')
   if (!user && protectedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {

@@ -1,5 +1,7 @@
 // lib/profiles.ts
-import { supabase } from './supabaseClient'
+"use server"
+
+import { createSupabaseServerComponentClient } from './supabase/server'
 
 export type Profile = {
   id: string
@@ -10,21 +12,27 @@ export type Profile = {
 
 /** fetch all profiles */
 export async function getProfiles(): Promise<Profile[]> {
+  const supabase = createSupabaseServerComponentClient()
+  
   const { data, error } = await supabase
-    .from<Profile>('profiles')
+    .from('profiles')
     .select('*')
     .order('created_at', { ascending: false })
+    
   if (error) throw error
-  return data
+  return data || []
 }
 
 /** insert a new profile */
 export async function createProfile(full_name: string, avatar_url?: string) {
+  const supabase = createSupabaseServerComponentClient()
+  
   const { data, error } = await supabase
-    .from<Profile>('profiles')
+    .from('profiles')
     .insert({ full_name, avatar_url })
     .select()
     .single()
+    
   if (error) throw error
   return data
 }

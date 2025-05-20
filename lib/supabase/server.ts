@@ -1,91 +1,83 @@
 // lib/supabase/server.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies' // May be needed for type safety in some Next.js versions
+import { NextResponse } from 'next/server'
 
-// Define a function to create a Supabase client for Server Components, Server Actions, and Route Handlers.
-// This function will read and write Supabase session cookies.
-export function createSupabaseServerClient(cookieStore?: ReadonlyRequestCookies) { // Make cookieStore optional for broader use
-  // If cookieStore is not provided (e.g. in a Route Handler or simple Server Component without direct access to request cookies initially),
-  // try to get it from next/headers. This is the common case for Server Components and Server Actions.
-  const currentCookies = cookieStore || cookies()
-
+// For use in Server Components where cookies are read-only
+export function createSupabaseServerComponentClient() {
+  const cookieStore = cookies()
+  
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return currentCookies.get(name)?.value
+        async get(name: string) {
+          const cookie = await cookieStore.get(name)
+          return cookie?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
-          // If `currentCookies` is the direct `cookies()` from `next/headers`,
-          // it's read-only in Server Components. `set` and `remove` are typically
-          // handled in Server Actions or middleware where modification is allowed.
-          // For Server Actions, you'd pass `cookies()` to this function, and `createServerClient`
-          // handles setting them on the response.
-          // This generic set function might not always be directly callable depending on context,
-          // but it's required by createServerClient.
-          try {
-            (currentCookies as any).set(name, value, options) // Type assertion for Server Actions
-          } catch (error) {
-            // Log error if cookies are read-only and set is attempted (e.g. in a Server Component)
-            // This is expected in some contexts. The important part is that `createServerClient`
-            // can *read* cookies correctly. Session updates are handled by middleware/actions.
-            // console.log(`Note: Failed to set cookie '${name}' in read-only context. This is often expected in Server Components.`);
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            (currentCookies as any).set(name, '', options) // Type assertion for Server Actions
-          } catch (error) {
-            // console.log(`Note: Failed to remove cookie '${name}' in read-only context.`);
-          }
-        },
+        // For Server Components, set and remove are no-ops as cookies() is read-only.
+        set(name: string, value: string, options: CookieOptions) {},
+        remove(name: string, options: CookieOptions) {},
       },
     }
   )
 }
 
-// Specific function for use in Server Actions and Route Handlers where you can modify cookies
-// (by passing cookies() from next/headers to it)
-export function createSupabaseServerActionClient() {
-    const cookieStore = cookies()
-    return createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value
-                },
-                set(name: string, value: string, options: CookieOptions) {
-                    cookieStore.set(name, value, options)
-                },
-                remove(name: string, options: CookieOptions) {
-                    cookieStore.set(name, '', options)
-                },
-            },
-        }
-    )
+// Specialized function for server action cookie management
+// This approach follows the official Supabase docs for Server Actions
+export async function createSupabaseServerActionClient() {
+  "use server"
+  const cookieStore = cookies()
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        async get(name: string) {
+          const cookie = await cookieStore.get(name)
+          return cookie?.value
+        },
+        async set(name: string, value: string, options: CookieOptions) {
+          await cookieStore.set(name, value, options)
+        },
+        async remove(name: string, options: CookieOptions) {
+          await cookieStore.set(name, '', { ...options, maxAge: 0 })
+        },
+      },
+    }
+  )
+  
+  return supabase
 }
 
-// Specific function for use in Server Components where cookies are read-only
-export function createSupabaseServerComponentClient() {
-    const cookieStore = cookies()
-    return createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value
-                },
-                // For Server Components, set and remove are no-ops as cookies() is read-only.
-                // The actual cookie management is handled via middleware or server actions.
-                set(name: string, value: string, options: CookieOptions) {},
-                remove(name: string, options: CookieOptions) {},
-            },
-        }
-    )
+// For use in middleware specifically
+export function createSupabaseMiddlewareClient(request: Request) {
+  // Create a response to modify cookies on
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.headers.get('cookie')?.split('; ').find(c => c.startsWith(`${name}=`))?.split('=')[1]
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          response.headers.append('Set-Cookie', `${name}=${value}; Max-Age=${options.maxAge || 3600}; Path=${options.path || '/'}${options.secure ? '; Secure' : ''}${options.httpOnly ? '; HttpOnly' : ''}${options.sameSite ? `; SameSite=${options.sameSite}` : ''}`)
+        },
+        remove(name: string, options: CookieOptions) {
+          response.headers.append('Set-Cookie', `${name}=; Max-Age=0; Path=${options.path || '/'}`)
+        },
+      },
+    }
+  )
+
+  return { supabase, response }
 }
