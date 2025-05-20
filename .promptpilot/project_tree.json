@@ -700,13 +700,6 @@
         "parentKey": "components"
       },
       {
-        "key": "components/top-bar.tsx",
-        "title": "top-bar.tsx",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "components"
-      },
-      {
         "key": "components/topbar.tsx",
         "title": "topbar.tsx",
         "children": [],
@@ -733,28 +726,6 @@
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
-      }
-    ],
-    "isLeaf": false,
-    "parentKey": null
-  },
-  {
-    "key": "hooks",
-    "title": "hooks",
-    "children": [
-      {
-        "key": "hooks/use-mobile.tsx",
-        "title": "use-mobile.tsx",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "hooks"
-      },
-      {
-        "key": "hooks/use-toast.ts",
-        "title": "use-toast.ts",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "hooks"
       }
     ],
     "isLeaf": false,
@@ -834,21 +805,6 @@
         "children": [],
         "isLeaf": true,
         "parentKey": "public"
-      }
-    ],
-    "isLeaf": false,
-    "parentKey": null
-  },
-  {
-    "key": "styles",
-    "title": "styles",
-    "children": [
-      {
-        "key": "styles/globals.css",
-        "title": "globals.css",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "styles"
       }
     ],
     "isLeaf": false,
