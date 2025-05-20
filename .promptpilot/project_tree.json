@@ -42,6 +42,21 @@
         "parentKey": "app"
       },
       {
+        "key": "app/auth",
+        "title": "auth",
+        "children": [
+          {
+            "key": "app/auth/actions.ts",
+            "title": "actions.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/auth"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/calendar",
         "title": "calendar",
         "children": [
@@ -87,6 +102,21 @@
         "parentKey": "app"
       },
       {
+        "key": "app/login",
+        "title": "login",
+        "children": [
+          {
+            "key": "app/login/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/login"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/reports",
         "title": "reports",
         "children": [
@@ -96,6 +126,21 @@
             "children": [],
             "isLeaf": true,
             "parentKey": "app/reports"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
+        "key": "app/signup",
+        "title": "signup",
+        "children": [
+          {
+            "key": "app/signup/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/signup"
           }
         ],
         "isLeaf": false,
@@ -623,6 +668,13 @@
         "parentKey": "components"
       },
       {
+        "key": "components/login-form.tsx",
+        "title": "login-form.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
         "key": "components/logo.tsx",
         "title": "logo.tsx",
         "children": [],
@@ -688,6 +740,13 @@
       {
         "key": "components/sidebar.tsx",
         "title": "sidebar.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/signup-form.tsx",
+        "title": "signup-form.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
