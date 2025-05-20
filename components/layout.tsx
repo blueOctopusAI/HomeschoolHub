@@ -27,6 +27,16 @@ export function Layout({ children }: { children: ReactNode }) {
     )
   }
 
+  // For auth pages, don't show the app layout (sidebar/topbar)
+  if (isAuthPage) {
+    return (
+      <div className="flex h-screen bg-[#faf9f5]">
+        <main className="flex-1 overflow-auto p-4">{children}</main>
+      </div>
+    )
+  }
+
+  // For regular app pages, show the full layout
   return (
     <div className="flex h-screen bg-[#faf9f5]">
       <Sidebar />

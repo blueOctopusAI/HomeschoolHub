@@ -678,6 +678,13 @@
         "parentKey": "components"
       },
       {
+        "key": "components/current-view-updater.tsx",
+        "title": "current-view-updater.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
         "key": "components/dashboard-view.tsx",
         "title": "dashboard-view.tsx",
         "children": [],
