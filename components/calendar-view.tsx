@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
 import { Plus } from "lucide-react"
 import { Button } from "./ui/button"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Lesson, type Student } from "@/lib/store"
 import { LessonModal } from "./lesson-modal"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
@@ -19,11 +19,16 @@ const logoColors = {
 }
 
 export function CalendarView() {
-  const { currentDate, selectedStudent, students, lessons } = useAppContext()
+  // Get data from Zustand store
+  const currentDate = useStore((state) => state.currentDate)
+  const selectedStudent = useStore((state) => state.selectedStudent)
+  const students = useStore((state) => state.students)
+  const lessons = useStore((state) => state.lessons)
 
+  // Local state for modal
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [editingLesson, setEditingLesson] = useState<any | null>(null)
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
 
   // Get the start of the week (Monday) - memoize this calculation
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate])
@@ -68,7 +73,7 @@ export function CalendarView() {
 
         return acc
       },
-      {} as Record<string, any[]>,
+      {} as Record<string, Lesson[]>,
     )
   }, [daysOfWeek, filteredLessons])
 
@@ -80,7 +85,7 @@ export function CalendarView() {
   }, [])
 
   // Handle editing a lesson - use useCallback to prevent recreation on each render
-  const handleEditLesson = useCallback((lesson: any) => {
+  const handleEditLesson = useCallback((lesson: Lesson) => {
     setEditingLesson(lesson)
     setSelectedDate(parseISO(lesson.startDate))
     setIsModalOpen(true)

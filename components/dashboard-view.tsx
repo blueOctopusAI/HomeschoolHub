@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useMemo } from "react"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Student, type Lesson, type Course, type Assignment } from "@/lib/store"
 import { format, addDays, isWithinInterval } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,7 +9,13 @@ import { Progress } from "@/components/ui/progress"
 import { CalendarDays, BookOpen, CheckSquare, GraduationCap } from "lucide-react"
 
 export const DashboardView = memo(function DashboardView() {
-  const { students, lessons, courses, assignments, currentDate, selectedStudent } = useAppContext()
+  // Get data from Zustand store using individual selectors
+  const students = useStore((state) => state.students)
+  const lessons = useStore((state) => state.lessons)
+  const courses = useStore((state) => state.courses)
+  const assignments = useStore((state) => state.assignments)
+  const currentDate = useStore((state) => state.currentDate)
+  const selectedStudent = useStore((state) => state.selectedStudent)
 
   // Get selected student name
   const student = useMemo(() => {

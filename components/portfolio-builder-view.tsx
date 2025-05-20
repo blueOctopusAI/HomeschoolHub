@@ -1,10 +1,21 @@
 "use client"
 
-import { useAppContext } from "@/lib/context"
+import { useMemo } from "react"
+import { useStore, type Student } from "@/lib/store"
 
 export function PortfolioBuilderView() {
-  const { selectedStudent } = useAppContext()
-  const student = selectedStudent ? { name: "Student" } : null
+  // Get selectedStudent ID from Zustand store
+  const selectedStudentId = useStore((state) => state.selectedStudent)
+  
+  // Get all students from the store
+  const students = useStore((state) => state.students)
+  
+  // Find the selected student object using the ID
+  const student = useMemo(() => 
+    selectedStudentId !== "all" 
+      ? students.find(s => s.id === selectedStudentId) 
+      : null
+  , [students, selectedStudentId])
 
   return (
     <div className="container mx-auto p-6">

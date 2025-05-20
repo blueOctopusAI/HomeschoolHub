@@ -75,6 +75,7 @@ type Store = {
   setCurrentView: (view: View) => void
   setCurrentDate: (date: Date) => void
   setSelectedStudent: (studentId: string) => void
+  importLessons: () => void
   addStudent: (student: Omit<Student, "id">) => void
   updateStudent: (id: string, updates: Partial<Student>) => void
   deleteStudent: (id: string) => void
@@ -299,6 +300,11 @@ export const useStore = create<Store>((set) => ({
   setCurrentView: (view) => set({ currentView: view }),
   setCurrentDate: (date) => set({ currentDate: date }),
   setSelectedStudent: (studentId) => set({ selectedStudent: studentId }),
+  importLessons: () => {
+    // Placeholder for the lesson import functionality
+    console.log("Import lessons action triggered from Zustand store")
+    // In a real implementation, this would handle file uploads or data imports
+  },
 
   // Student actions
   addStudent: (student) =>

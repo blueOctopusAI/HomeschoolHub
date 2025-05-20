@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns"
 import { CalendarIcon, Printer, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { students, lessons, getLessonsByStudentId } from "@/lib/data"
+import { useStore, type Lesson, type Student } from "@/lib/store"
 
 export function ChecklistGenerator() {
   const [selectedStudent, setSelectedStudent] = useState<string>("")
@@ -19,18 +19,25 @@ export function ChecklistGenerator() {
   const [selectedView, setSelectedView] = useState<"daily" | "weekly">("daily")
   const [filterSubject, setFilterSubject] = useState<string>("all")
 
+  // Get data from Zustand store instead of direct imports
+  const students = useStore((state) => state.students)
+  const lessons = useStore((state) => state.lessons)
+
   // Get the start and end of the week for the selected date
   const weekStart = startOfWeek(selectedDate)
   const weekEnd = endOfWeek(selectedDate)
 
   // Get all unique subject names from lessons
-  const subjects = Array.from(new Set(lessons.map((lesson) => lesson.subjectName)))
+  const subjects = useMemo(() => 
+    Array.from(new Set(lessons.map((lesson) => lesson.subjectName)))
+  , [lessons])
 
   // Get lessons for the selected student and date/week
   const getFilteredLessons = () => {
     if (!selectedStudent) return []
 
-    let studentLessons = getLessonsByStudentId(selectedStudent)
+    // Filter lessons by student ID (replace getLessonsByStudentId with direct filtering)
+    let studentLessons = lessons.filter(lesson => lesson.studentIds.includes(selectedStudent))
 
     // Filter by subject if not "all"
     if (filterSubject !== "all") {
@@ -92,11 +99,13 @@ export function ChecklistGenerator() {
                 <SelectValue placeholder="Select student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.name}
-                  </SelectItem>
-                ))}
+                {students
+                  .filter((student) => student.id !== "all") // Filter out the "all" option
+                  .map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

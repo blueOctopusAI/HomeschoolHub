@@ -10,24 +10,28 @@ import { Label } from "./ui/label"
 import { Textarea } from "./ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Checkbox } from "./ui/checkbox"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Lesson, type Student } from "@/lib/store"
 import { format } from "date-fns"
 
 interface LessonModalProps {
   isOpen: boolean
   onClose: () => void
   selectedDate: Date | null
-  editingLesson: any | null
+  editingLesson: Lesson | null
 }
 
 export function LessonModal({ isOpen, onClose, selectedDate, editingLesson }: LessonModalProps) {
-  // Get data and actions from context
-  const { students, addLesson, updateLesson } = useAppContext()
+  // Get data and actions from Zustand store
+  const students = useStore((state) => state.students)
+  const addLesson = useStore((state) => state.addLesson)
+  const updateLesson = useStore((state) => state.updateLesson)
 
   // Default lesson state - memoize this to prevent recreation on each render
   const defaultLesson = useMemo(
     () => ({
+      subjectId: "",
       subjectName: "",
+      subjectColor: "",
       description: "",
       studentIds: [] as string[],
       startDate: selectedDate ? new Date(selectedDate).toISOString() : new Date().toISOString(),
@@ -159,11 +163,13 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson }: Le
       day: dayOfWeek,
     }
 
-    // Save the lesson
+    // Save the lesson using Zustand store actions
     if (editingLesson) {
       updateLesson(editingLesson.id, updatedLesson)
     } else {
-      addLesson(updatedLesson)
+      // When adding a new lesson, we use the addLesson action which expects Omit<Lesson, "id">
+      const { id, ...lessonWithoutId } = updatedLesson as any // Need to remove id if it exists
+      addLesson(lessonWithoutId)
     }
 
     onClose()

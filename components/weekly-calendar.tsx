@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useStore } from "@/lib/store"
+import { useStore, type Lesson, type Student } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
 
@@ -26,48 +26,42 @@ const logoColors = {
 }
 
 export function WeeklyCalendar() {
-  // Get data and actions from store
-  const {
-    students,
-    lessons,
-    selectedStudent,
-    currentDate,
-    addLesson,
-    updateLesson,
-    deleteLesson,
-    toggleLessonComplete,
-  } = useStore((state) => ({
-    students: state.students,
-    lessons: state.lessons,
-    selectedStudent: state.selectedStudent,
-    currentDate: state.currentDate,
-    addLesson: state.addLesson,
-    updateLesson: state.updateLesson,
-    deleteLesson: state.deleteLesson,
-    toggleLessonComplete: state.toggleLessonComplete,
-  }))
+  // Get data and actions from store using individual selectors for consistency
+  const students = useStore((state) => state.students)
+  const lessons = useStore((state) => state.lessons)
+  const selectedStudent = useStore((state) => state.selectedStudent)
+  const currentDate = useStore((state) => state.currentDate)
+  const addLesson = useStore((state) => state.addLesson)
+  const updateLesson = useStore((state) => state.updateLesson)
+  const deleteLesson = useStore((state) => state.deleteLesson)
+  const toggleLessonComplete = useStore((state) => state.toggleLessonComplete)
 
   // Local state for modal
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
-  const [editingLesson, setEditingLesson] = useState<any | null>(null)
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
 
   // Form state
   const [formData, setFormData] = useState({
+    subjectId: "",
     subjectName: "",
+    subjectColor: "",
     description: "",
     studentIds: [] as string[],
     startTime: "09:00",
     endTime: "10:00",
     materialsNeeded: "",
     location: "",
+    objectives: "",
   })
 
-  // Get the start of the week (Monday)
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+  // Get the start of the week (Monday) - memoize this calculation
+  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate])
 
-  // Create an array of 5 days (Monday to Friday)
-  const daysOfWeek = Array.from({ length: 5 }).map((_, i) => addDays(weekStart, i))
+  // Create an array of 5 days (Monday to Friday) - memoize this calculation
+  const daysOfWeek = useMemo(() => 
+    Array.from({ length: 5 }).map((_, i) => addDays(weekStart, i))
+  , [weekStart])
 
   // Handle adding a new lesson
   const handleAddLesson = useCallback(
@@ -75,13 +69,16 @@ export function WeeklyCalendar() {
       setSelectedDay(day)
       setEditingLesson(null)
       setFormData({
+        subjectId: "",
         subjectName: "",
+        subjectColor: "",
         description: "",
         studentIds: selectedStudent !== "all" ? [selectedStudent] : [],
         startTime: "09:00",
         endTime: "10:00",
         materialsNeeded: "",
         location: "",
+        objectives: "",
       })
       setIsModalOpen(true)
     },
@@ -89,7 +86,7 @@ export function WeeklyCalendar() {
   )
 
   // Handle editing a lesson
-  const handleEditLesson = useCallback((lesson: any) => {
+  const handleEditLesson = useCallback((lesson: Lesson) => {
     setSelectedDay(new Date(lesson.startDate))
     setEditingLesson(lesson)
 
@@ -98,13 +95,16 @@ export function WeeklyCalendar() {
     const endTime = format(new Date(lesson.endDate), "HH:mm")
 
     setFormData({
+      subjectId: lesson.subjectId || "",
       subjectName: lesson.subjectName,
+      subjectColor: lesson.subjectColor || "",
       description: lesson.description || "",
       studentIds: lesson.studentIds,
       startTime,
       endTime,
       materialsNeeded: lesson.materialsNeeded || "",
       location: lesson.location || "",
+      objectives: lesson.objectives || "",
     })
 
     setIsModalOpen(true)
@@ -127,6 +127,26 @@ export function WeeklyCalendar() {
     })
   }, [])
 
+  // Handle lesson completion toggle
+  const handleToggleComplete = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>, lessonId: string) => {
+      e.stopPropagation() // Prevent opening edit modal
+      toggleLessonComplete(lessonId)
+    },
+    [toggleLessonComplete]
+  )
+
+  // Handle lesson delete
+  const handleDeleteLesson = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, lessonId: string) => {
+      e.stopPropagation() // Prevent opening edit modal
+      if (confirm("Are you sure you want to delete this lesson?")) {
+        deleteLesson(lessonId)
+      }
+    },
+    [deleteLesson]
+  )
+
   // Handle form submission
   const handleSubmit = useCallback(() => {
     if (!selectedDay || !formData.subjectName) return
@@ -140,7 +160,9 @@ export function WeeklyCalendar() {
     endDate.setHours(endHours, endMinutes, 0, 0)
 
     const lessonData = {
+      subjectId: formData.subjectId || `subject-${formData.subjectName.toLowerCase().replace(/\s+/g, '-')}`,
       subjectName: formData.subjectName,
+      subjectColor: formData.subjectColor || getSubjectColor(formData.subjectName).text.replace("text", "#"),
       description: formData.description,
       studentIds: formData.studentIds.length > 0 ? formData.studentIds : [students[0].id],
       startDate: startDate.toISOString(),
@@ -149,18 +171,27 @@ export function WeeklyCalendar() {
       completed: editingLesson ? editingLesson.completed : false,
       materialsNeeded: formData.materialsNeeded,
       location: formData.location,
+      objectives: formData.objectives,
+      day: format(selectedDay, "EEEE"),
     }
 
     if (editingLesson) {
       updateLesson(editingLesson.id, lessonData)
     } else {
+      // Remove any undefined fields when creating a new lesson
+      Object.keys(lessonData).forEach((key) => {
+        if (lessonData[key as keyof typeof lessonData] === undefined) {
+          delete lessonData[key as keyof typeof lessonData]
+        }
+      })
+      
       addLesson(lessonData)
     }
 
     setIsModalOpen(false)
   }, [selectedDay, formData, editingLesson, students, addLesson, updateLesson])
 
-  // Get lessons for a specific day
+  // Get lessons for a specific day - memoize this function
   const getLessonsForDay = useCallback(
     (day: Date) => {
       return lessons.filter((lesson) => {
@@ -171,7 +202,7 @@ export function WeeklyCalendar() {
     [lessons, selectedStudent],
   )
 
-  // Get student name by ID
+  // Get student name by ID - memoize this function
   const getStudentName = useCallback(
     (studentId: string) => {
       const student = students.find((s) => s.id === studentId)
@@ -180,8 +211,8 @@ export function WeeklyCalendar() {
     [students],
   )
 
-  // Subject colors
-  const subjectColors: Record<string, { bg: string; text: string }> = {
+  // Subject colors - memoize this object
+  const subjectColors = useMemo(() => ({
     Math: { bg: "bg-blue-50", text: "text-blue-800" },
     Science: { bg: "bg-green-50", text: "text-green-800" },
     Reading: { bg: "bg-amber-50", text: "text-amber-800" },
@@ -190,9 +221,9 @@ export function WeeklyCalendar() {
     Art: { bg: "bg-pink-50", text: "text-pink-800" },
     Music: { bg: "bg-indigo-50", text: "text-indigo-800" },
     "Physical Education": { bg: "bg-cyan-50", text: "text-cyan-800" },
-  }
+  }), [])
 
-  // Get subject color
+  // Get subject color - memoize this function
   const getSubjectColor = useCallback(
     (subjectName: string) => {
       return (
@@ -205,14 +236,17 @@ export function WeeklyCalendar() {
     [subjectColors],
   )
 
-  const lessonsByDay: { [key: string]: any[] } = daysOfWeek.reduce((acc: any, day) => {
-    const dayKey = format(day, "yyyy-MM-dd")
-    acc[dayKey] = lessons.filter((lesson) => {
-      const lessonDate = new Date(lesson.startDate)
-      return isSameDay(lessonDate, day) && (selectedStudent === "all" || lesson.studentIds.includes(selectedStudent))
-    })
-    return acc
-  }, {})
+  // Organize lessons by day - memoize this calculation
+  const lessonsByDay = useMemo(() => 
+    daysOfWeek.reduce((acc, day) => {
+      const dayKey = format(day, "yyyy-MM-dd")
+      acc[dayKey] = lessons.filter((lesson) => {
+        const lessonDate = new Date(lesson.startDate)
+        return isSameDay(lessonDate, day) && (selectedStudent === "all" || lesson.studentIds.includes(selectedStudent))
+      }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      return acc
+    }, {} as Record<string, Lesson[]>)
+  , [daysOfWeek, lessons, selectedStudent])
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -283,7 +317,18 @@ export function WeeklyCalendar() {
                         <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
                       )}
 
-                      {lesson.completed && <div className="mt-1 text-xs text-green-600 font-medium">✓ Completed</div>}
+                      <div className="mt-1 flex justify-between items-center">
+                        <div 
+                          className="cursor-pointer"
+                          onClick={(e) => handleToggleComplete(e, lesson.id)}
+                        >
+                          {lesson.completed ? (
+                            <span className="text-xs text-green-600 font-medium">✓ Completed</span>
+                          ) : (
+                            <span className="text-xs text-gray-500">Mark as complete</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )
                 })}
@@ -348,6 +393,20 @@ export function WeeklyCalendar() {
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Brief description of the lesson"
+                className="border-[#5e8b7e]/20 bg-white"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="objectives" className="text-[#5e8b7e]">
+                Objectives
+              </Label>
+              <Textarea
+                id="objectives"
+                name="objectives"
+                value={formData.objectives}
+                onChange={handleInputChange}
+                placeholder="Learning objectives for this lesson"
                 className="border-[#5e8b7e]/20 bg-white"
               />
             </div>
@@ -431,6 +490,15 @@ export function WeeklyCalendar() {
           </div>
 
           <DialogFooter>
+            {editingLesson && (
+              <Button
+                variant="outline"
+                onClick={(e) => handleDeleteLesson(e, editingLesson.id)}
+                className="mr-auto border-red-300 text-red-500 hover:bg-red-50"
+              >
+                Delete
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setIsModalOpen(false)}

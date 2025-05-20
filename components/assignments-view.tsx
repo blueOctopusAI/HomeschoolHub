@@ -12,16 +12,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CreateAssignmentModal } from "./create-assignment-modal"
 import { UpdateAssignmentModal } from "./update-assignment-modal"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Assignment } from "@/lib/store"
 
 export function AssignmentsView() {
-  // Get data from context
-  const { assignments, students, courses, selectedStudent, deleteAssignment } = useAppContext()
+  // Get data from Zustand store
+  const assignments = useStore((state) => state.assignments)
+  const students = useStore((state) => state.students)
+  const courses = useStore((state) => state.courses)
+  const selectedStudent = useStore((state) => state.selectedStudent)
+  const deleteAssignment = useStore((state) => state.deleteAssignment)
 
   // Local state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
-  const [editingAssignment, setEditingAssignment] = useState<any | null>(null)
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState<{
@@ -82,7 +86,7 @@ export function AssignmentsView() {
   }
 
   // Handle edit assignment
-  const handleEditAssignment = (assignment: any) => {
+  const handleEditAssignment = (assignment: Assignment) => {
     setEditingAssignment(assignment)
     setIsUpdateModalOpen(true)
   }

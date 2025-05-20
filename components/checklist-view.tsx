@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Lesson, type Student } from "@/lib/store"
 import { Check, Calendar, BookOpen, CheckSquare, CheckCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 export function ChecklistView() {
-  // Get data from context
-  const { lessons, students, selectedStudent, currentDate } = useAppContext()
-
-  // Get actions separately to avoid dependency issues
-  const { toggleLessonComplete } = useAppContext()
+  // Get data from Zustand store
+  const lessons = useStore((state) => state.lessons)
+  const students = useStore((state) => state.students)
+  const selectedStudent = useStore((state) => state.selectedStudent)
+  const currentDate = useStore((state) => state.currentDate)
+  const toggleLessonComplete = useStore((state) => state.toggleLessonComplete)
 
   // Local state
   const [view, setView] = useState<"day" | "week">("day")
@@ -62,7 +63,7 @@ export function ChecklistView() {
         acc[dateKey].push(lesson)
         return acc
       },
-      {} as Record<string, typeof filteredLessons>,
+      {} as Record<string, Lesson[]>,
     )
   }, [filteredLessons])
 
@@ -113,7 +114,7 @@ export function ChecklistView() {
   }
 
   // Render lesson item
-  const renderLessonItem = (lesson: any) => (
+  const renderLessonItem = (lesson: Lesson) => (
     <div
       key={lesson.id}
       className={cn(

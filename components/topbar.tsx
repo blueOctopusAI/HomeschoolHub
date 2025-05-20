@@ -7,10 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAppContext } from "@/lib/context"
+import { useStore } from "@/lib/store"
 
 export function Topbar() {
-  const { students, selectedStudent, currentDate, setSelectedStudent, setCurrentDate } = useAppContext()
+  // Get state and actions from Zustand store
+  const students = useStore((state) => state.students)
+  const selectedStudent = useStore((state) => state.selectedStudent)
+  const currentDate = useStore((state) => state.currentDate)
+  const setSelectedStudent = useStore((state) => state.setSelectedStudent)
+  const setCurrentDate = useStore((state) => state.setCurrentDate)
+  const importLessons = useStore((state) => state.importLessons)
+  
   const [date, setDate] = useState<Date>(currentDate)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
@@ -30,7 +37,9 @@ export function Topbar() {
   }
 
   const handleImport = () => {
-    // In a real app, this would open a file dialog
+    // Use the importLessons action from the Zustand store
+    importLessons()
+    // Show an alert for UI feedback (this would be replaced with proper UI in a real implementation)
     alert("Import functionality would be implemented here")
   }
 

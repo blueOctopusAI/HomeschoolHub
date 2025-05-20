@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Assignment } from "@/lib/store"
 
 interface CreateAssignmentModalProps {
   open: boolean
@@ -27,7 +27,11 @@ interface CreateAssignmentModalProps {
 }
 
 export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentModalProps) {
-  const { students, courses, addAssignment, selectedStudent } = useAppContext()
+  // Get data and actions from Zustand store
+  const students = useStore((state) => state.students)
+  const courses = useStore((state) => state.courses)
+  const addAssignment = useStore((state) => state.addAssignment)
+  const selectedStudent = useStore((state) => state.selectedStudent)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -89,13 +93,13 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
     // Clear validation error
     setValidationError(null)
 
-    // Add assignment
+    // Add assignment using the Zustand store action
     addAssignment({
       title,
       description,
       studentIds: selectedStudentIds,
       dueDate: dueDate.toISOString(),
-      status,
+      status: status as Assignment['status'],
       pointsPossible,
       courseId,
     })

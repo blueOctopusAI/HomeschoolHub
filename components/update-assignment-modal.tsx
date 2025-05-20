@@ -19,16 +19,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { useAppContext } from "@/lib/context"
+import { useStore, type Assignment } from "@/lib/store"
 
 interface UpdateAssignmentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  assignment: any | null
+  assignment: Assignment | null
 }
 
 export function UpdateAssignmentModal({ open, onOpenChange, assignment }: UpdateAssignmentModalProps) {
-  const { students, courses, updateAssignment } = useAppContext()
+  // Get data and actions from Zustand store
+  const students = useStore((state) => state.students)
+  const courses = useStore((state) => state.courses)
+  const updateAssignment = useStore((state) => state.updateAssignment)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -105,12 +108,13 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
     // Clear validation error
     setValidationError(null)
 
+    // Update assignment using the Zustand store action
     updateAssignment(assignment.id, {
       title,
       description,
       studentIds: selectedStudentIds,
       dueDate: dueDate.toISOString(),
-      status,
+      status: status as Assignment['status'],
       pointsPossible,
       pointsEarned: status === "Graded" ? pointsEarned : undefined,
       courseId,

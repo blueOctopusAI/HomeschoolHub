@@ -4,21 +4,9 @@ import { useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Printer, FileDown, Filter } from "lucide-react"
-import { useStudents, useSelectedStudent, useCourses } from "@/lib/store"
+import { useStore, type Course, type Student } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-// Define Course type
-export type Course = {
-  id: string
-  name: string
-  category: string
-  term: "Fall Semester" | "Spring Semester" | "Full Year"
-  grade: string
-  credits: number
-  studentId: string
-  academicYear?: string // Added academic year field
-}
 
 // GPA calculation helper
 const gradeToPoints = (grade: string): number => {
@@ -42,9 +30,10 @@ const gradeToPoints = (grade: string): number => {
 }
 
 export function TranscriptView() {
-  const students = useStudents()
-  const selectedStudentId = useSelectedStudent()
-  const courses = useCourses()
+  // Use direct selectors from useStore instead of helper hooks for consistency
+  const students = useStore((state) => state.students)
+  const selectedStudentId = useStore((state) => state.selectedStudent)
+  const courses = useStore((state) => state.courses)
   const [yearFilter, setYearFilter] = useState<string>("all")
 
   // Get the selected student

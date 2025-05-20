@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useAppContext } from "@/lib/context"
+import { useState, useMemo } from "react"
+import { useStore, type Student, type Course, type Lesson, type Assignment } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -10,32 +10,42 @@ import { CalendarIcon, Printer, UserRound } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function ProgressReportView() {
-  const { students, courses, lessons, assignments, selectedStudentId } = useAppContext()
+  // Get data from Zustand store
+  const students = useStore((state) => state.students)
+  const courses = useStore((state) => state.courses)
+  const lessons = useStore((state) => state.lessons)
+  const assignments = useStore((state) => state.assignments)
+  const selectedStudentId = useStore((state) => state.selectedStudent)
 
+  // Local state for date range
   const [startDate, setStartDate] = useState<Date | undefined>(new Date())
   const [endDate, setEndDate] = useState<Date | undefined>(new Date())
 
-  const selectedStudent = students.find((student) => student.id === selectedStudentId)
+  // Get selected student and check if all students are selected
+  const selectedStudent = useMemo(() => 
+    students.find((student) => student.id === selectedStudentId)
+  , [students, selectedStudentId])
+  
   const isAllStudentsSelected = selectedStudentId === "all"
 
   // Filter lessons and assignments based on date range and selected student
-  const filteredLessons = lessons.filter((lesson) => {
-    if (!startDate || !endDate || !lesson.date) return false
+  const filteredLessons = useMemo(() => lessons.filter((lesson) => {
+    if (!startDate || !endDate || !lesson.startDate) return false
     if (isAllStudentsSelected) return false
-    if (lesson.studentId !== selectedStudentId) return false
+    if (!lesson.studentIds.includes(selectedStudentId)) return false
 
-    const lessonDate = parseISO(lesson.date)
+    const lessonDate = parseISO(lesson.startDate)
     return isWithinInterval(lessonDate, { start: startDate, end: endDate })
-  })
+  }), [lessons, startDate, endDate, selectedStudentId, isAllStudentsSelected])
 
-  const filteredAssignments = assignments.filter((assignment) => {
+  const filteredAssignments = useMemo(() => assignments.filter((assignment) => {
     if (!startDate || !endDate || !assignment.dueDate) return false
     if (isAllStudentsSelected) return false
-    if (assignment.studentId !== selectedStudentId) return false
+    if (!assignment.studentIds.includes(selectedStudentId)) return false
 
     const dueDate = parseISO(assignment.dueDate)
     return isWithinInterval(dueDate, { start: startDate, end: endDate })
-  })
+  }), [assignments, startDate, endDate, selectedStudentId, isAllStudentsSelected])
 
   // Calculate statistics
   const totalLessons = filteredLessons.length
@@ -43,26 +53,44 @@ export function ProgressReportView() {
   const incompleteLessons = totalLessons - completedLessons
 
   // Calculate GPA if available
-  const studentCourses = courses.filter((course) => course.studentId === selectedStudentId)
+  const studentCourses = useMemo(() => 
+    courses.filter((course) => course.studentId === selectedStudentId)
+  , [courses, selectedStudentId])
+  
   const hasGrades = studentCourses.some((course) => course.grade !== undefined)
 
-  let gpa = 0
-  if (hasGrades) {
+  const gpa = useMemo(() => {
+    if (!hasGrades) return 0
+    
     const gradePoints = studentCourses.reduce((total, course) => {
       if (course.grade === undefined) return total
 
-      // Convert letter grade to GPA points
-      let points = 0
-      if (course.grade >= 90) points = 4.0
-      else if (course.grade >= 80) points = 3.0
-      else if (course.grade >= 70) points = 2.0
-      else if (course.grade >= 60) points = 1.0
+      // Handle both string and number grade formats
+      let numericGrade: number
+      if (typeof course.grade === 'string') {
+        // Parse letter grades to points
+        const gradeMap: Record<string, number> = {
+          "A+": 4.0, "A": 4.0, "A-": 3.7,
+          "B+": 3.3, "B": 3.0, "B-": 2.7,
+          "C+": 2.3, "C": 2.0, "C-": 1.7,
+          "D+": 1.3, "D": 1.0, "D-": 0.7,
+          "F": 0.0
+        }
+        numericGrade = gradeMap[course.grade] || 0
+      } else {
+        // Process numeric grades
+        if (course.grade >= 90) numericGrade = 4.0
+        else if (course.grade >= 80) numericGrade = 3.0
+        else if (course.grade >= 70) numericGrade = 2.0
+        else if (course.grade >= 60) numericGrade = 1.0
+        else numericGrade = 0.0
+      }
 
-      return total + points
+      return total + numericGrade
     }, 0)
 
-    gpa = gradePoints / studentCourses.length
-  }
+    return studentCourses.length > 0 ? gradePoints / studentCourses.length : 0
+  }, [hasGrades, studentCourses])
 
   const handlePrint = () => {
     window.print()
@@ -138,7 +166,7 @@ export function ProgressReportView() {
               <h2 className="text-xl font-bold">{selectedStudent.name}'s Progress Report</h2>
             </div>
             <p className="text-gray-600">
-              Grade: {selectedStudent.grade || "Not specified"} | Period: {format(startDate, "MMM d, yyyy")} -{" "}
+              Grade: {selectedStudent.gradeLevel || "Not specified"} | Period: {format(startDate, "MMM d, yyyy")} -{" "}
               {format(endDate, "MMM d, yyyy")}
             </p>
           </div>
@@ -247,13 +275,13 @@ export function ProgressReportView() {
                   </thead>
                   <tbody>
                     {filteredLessons.map((lesson) => {
-                      const course = courses.find((c) => c.id === lesson.courseId)
+                      const course = courses.find((c) => c.id === lesson.subjectId)
                       return (
                         <tr key={lesson.id} className="border-b hover:bg-gray-50">
-                          <td className="p-2">{lesson.title}</td>
+                          <td className="p-2">{lesson.subjectName}</td>
                           <td className="p-2">{course?.name || "Unknown"}</td>
                           <td className="p-2">
-                            {lesson.date ? format(parseISO(lesson.date), "MMM d, yyyy") : "No date"}
+                            {lesson.startDate ? format(parseISO(lesson.startDate), "MMM d, yyyy") : "No date"}
                           </td>
                           <td className="p-2">
                             <span
