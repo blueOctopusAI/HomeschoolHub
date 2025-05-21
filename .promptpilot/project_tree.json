@@ -31,6 +31,35 @@
         "title": "assignments",
         "children": [
           {
+            "key": "app/assignments/to_be_deleted",
+            "title": "to_be_deleted",
+            "children": [
+              {
+                "key": "app/assignments/to_be_deleted/form-actions.ts",
+                "title": "form-actions.ts",
+                "children": [],
+                "isLeaf": true,
+                "parentKey": "app/assignments/to_be_deleted"
+              },
+              {
+                "key": "app/assignments/to_be_deleted/simple-actions.ts",
+                "title": "simple-actions.ts",
+                "children": [],
+                "isLeaf": true,
+                "parentKey": "app/assignments/to_be_deleted"
+              },
+              {
+                "key": "app/assignments/to_be_deleted/simple-handler.ts",
+                "title": "simple-handler.ts",
+                "children": [],
+                "isLeaf": true,
+                "parentKey": "app/assignments/to_be_deleted"
+              }
+            ],
+            "isLeaf": false,
+            "parentKey": "app/assignments"
+          },
+          {
             "key": "app/assignments/actions.ts",
             "title": "actions.ts",
             "children": [],
@@ -38,29 +67,8 @@
             "parentKey": "app/assignments"
           },
           {
-            "key": "app/assignments/form-actions.ts",
-            "title": "form-actions.ts",
-            "children": [],
-            "isLeaf": true,
-            "parentKey": "app/assignments"
-          },
-          {
             "key": "app/assignments/page.tsx",
             "title": "page.tsx",
-            "children": [],
-            "isLeaf": true,
-            "parentKey": "app/assignments"
-          },
-          {
-            "key": "app/assignments/simple-actions.ts",
-            "title": "simple-actions.ts",
-            "children": [],
-            "isLeaf": true,
-            "parentKey": "app/assignments"
-          },
-          {
-            "key": "app/assignments/simple-handler.ts",
-            "title": "simple-handler.ts",
             "children": [],
             "isLeaf": true,
             "parentKey": "app/assignments"
