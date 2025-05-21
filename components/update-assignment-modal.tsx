@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { format, parseISO } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -20,6 +20,26 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { useStore, type Assignment } from "@/lib/store"
+import { updateAssignment } from "@/app/assignments/actions"
+import { useActionState, useFormStatus } from "react"
+
+// Submit button with loading state
+function SubmitButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button type="submit" disabled={pending} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Updating...
+        </>
+      ) : (
+        "Update Assignment"
+      )}
+    </Button>
+  )
+}
 
 interface UpdateAssignmentModalProps {
   open: boolean
@@ -27,11 +47,19 @@ interface UpdateAssignmentModalProps {
   assignment: Assignment | null
 }
 
+const initialState = {
+  success: false,
+  message: null,
+  errors: {}
+}
+
 export function UpdateAssignmentModal({ open, onOpenChange, assignment }: UpdateAssignmentModalProps) {
-  // Get data and actions from Zustand store
+  // Get data from Zustand store
   const students = useStore((state) => state.students)
   const courses = useStore((state) => state.courses)
-  const updateAssignment = useStore((state) => state.updateAssignment)
+
+  // Form state with React useActionState hook
+  const [state, formAction] = useActionState(updateAssignment, initialState)
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -42,7 +70,6 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
   const [courseId, setCourseId] = useState<string | null>(null)
   const [status, setStatus] = useState<string>("Not Started")
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
 
   // Update form when assignment changes
   useEffect(() => {
@@ -55,9 +82,15 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
       setPointsEarned(assignment.pointsEarned)
       setCourseId(assignment.courseId || null)
       setStatus(assignment.status || "Not Started")
-      setValidationError(null)
     }
   }, [assignment])
+
+  // Close modal on successful update
+  useEffect(() => {
+    if (state.success) {
+      onOpenChange(false)
+    }
+  }, [state.success, onOpenChange])
 
   // Handle student selection
   const handleStudentSelection = (studentId: string) => {
@@ -70,71 +103,10 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
     })
   }
 
-  // Handle form submission
-  const handleSubmit = useCallback(() => {
-    if (!assignment) return
-
-    // Validate required fields
-    if (!title) {
-      setValidationError("Please enter a title")
-      return
-    }
-
-    if (selectedStudentIds.length === 0) {
-      setValidationError("Please select at least one student")
-      return
-    }
-
-    if (!dueDate) {
-      setValidationError("Please select a due date")
-      return
-    }
-
-    if (pointsPossible <= 0) {
-      setValidationError("Points possible must be greater than 0")
-      return
-    }
-
-    if (status === "Graded" && (pointsEarned === undefined || pointsEarned === null)) {
-      setValidationError("Please enter points earned for graded assignments")
-      return
-    }
-
-    if (pointsEarned !== undefined && pointsEarned > pointsPossible) {
-      setValidationError("Points earned cannot exceed points possible")
-      return
-    }
-
-    // Clear validation error
-    setValidationError(null)
-
-    // Update assignment using the Zustand store action
-    updateAssignment(assignment.id, {
-      title,
-      description,
-      studentIds: selectedStudentIds,
-      dueDate: dueDate.toISOString(),
-      status: status as Assignment['status'],
-      pointsPossible,
-      pointsEarned: status === "Graded" ? pointsEarned : undefined,
-      courseId,
-    })
-
-    onOpenChange(false)
-  }, [
-    assignment,
-    title,
-    selectedStudentIds,
-    dueDate,
-    pointsPossible,
-    pointsEarned,
-    status,
-    courseId,
-    updateAssignment,
-    onOpenChange,
-  ])
-
   if (!assignment) return null
+
+  // Extract field errors
+  const fieldErrors = state.errors || {}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,170 +116,228 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
           <DialogDescription>Update the assignment details.</DialogDescription>
         </DialogHeader>
 
-        {validationError && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">{validationError}</div>}
+        {state.message && !state.success && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">{state.message}</div>
+        )}
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title" className="text-[#5e8b7e]">
-              Assignment Title <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter assignment title"
-              className="border-[#5e8b7e]/20"
-            />
-          </div>
+        <form action={formAction} className="space-y-4">
+          {/* Hidden assignment ID field */}
+          <input type="hidden" name="assignmentId" value={assignment.id} />
+          <input type="hidden" name="studentIds" value={selectedStudentIds.join(',')} />
 
-          <div className="grid gap-2">
-            <Label htmlFor="description" className="text-[#5e8b7e]">
-              Description
-            </Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter assignment description"
-              className="border-[#5e8b7e]/20 min-h-[100px]"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label className="text-[#5e8b7e]">
-              Assign To <span className="text-red-500">*</span>
-            </Label>
-            <div className="flex flex-wrap gap-2 border rounded-md p-2 border-[#5e8b7e]/20">
-              {students
-                .filter((s) => s.id !== "all")
-                .map((student) => (
-                  <div key={student.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`student-${student.id}`}
-                      checked={selectedStudentIds.includes(student.id)}
-                      onChange={() => handleStudentSelection(student.id)}
-                      className="mr-2 rounded border-[#5e8b7e]/20"
-                    />
-                    <Label htmlFor={`student-${student.id}`} className="text-sm cursor-pointer">
-                      {student.name}
-                    </Label>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="dueDate" className="text-[#5e8b7e]">
-                Due Date <span className="text-red-500">*</span>
-              </Label>
-              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal border-[#5e8b7e]/20",
-                      !dueDate && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dueDate}
-                    onSelect={(date) => {
-                      setDueDate(date)
-                      setIsCalendarOpen(false)
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="points" className="text-[#5e8b7e]">
-                Points Possible <span className="text-red-500">*</span>
+              <Label htmlFor="title" className="text-[#5e8b7e]">
+                Assignment Title <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="points"
-                type="number"
-                min="0"
-                value={pointsPossible}
-                onChange={(e) => setPointsPossible(Number(e.target.value))}
-                className="border-[#5e8b7e]/20"
+                id="title"
+                name="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter assignment title"
+                className={cn("border-[#5e8b7e]/20", fieldErrors.title ? "border-red-500" : "")}
+              />
+              {fieldErrors.title && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.title[0]}</p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description" className="text-[#5e8b7e]">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter assignment description"
+                className="border-[#5e8b7e]/20 min-h-[100px]"
               />
             </div>
-          </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="status" className="text-[#5e8b7e]">
-              Status <span className="text-red-500">*</span>
-            </Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="status" className="border-[#5e8b7e]/20">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Not Started">Not Started</SelectItem>
-                <SelectItem value="Submitted">Submitted</SelectItem>
-                <SelectItem value="Graded">Graded</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {status === "Graded" && (
             <div className="grid gap-2">
-              <Label htmlFor="pointsEarned" className="text-[#5e8b7e]">
-                Points Earned <span className="text-red-500">*</span>
+              <Label className="text-[#5e8b7e]">
+                Assign To <span className="text-red-500">*</span>
               </Label>
-              <div className="flex items-center gap-2">
+              <div className={cn(
+                "flex flex-wrap gap-2 border rounded-md p-2 border-[#5e8b7e]/20",
+                fieldErrors.studentIds ? "border-red-500" : ""
+              )}>
+                {students
+                  .filter((s) => s.id !== "all")
+                  .map((student) => (
+                    <div key={student.id} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`student-${student.id}`}
+                        checked={selectedStudentIds.includes(student.id)}
+                        onChange={() => handleStudentSelection(student.id)}
+                        className="mr-2 rounded border-[#5e8b7e]/20"
+                      />
+                      <Label htmlFor={`student-${student.id}`} className="text-sm cursor-pointer">
+                        {student.name}
+                      </Label>
+                    </div>
+                  ))}
+              </div>
+              {fieldErrors.studentIds && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.studentIds[0]}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="dueDate" className="text-[#5e8b7e]">
+                  Due Date <span className="text-red-500">*</span>
+                </Label>
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button" /* Prevent form submission when clicking */
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal border-[#5e8b7e]/20",
+                        !dueDate && "text-muted-foreground",
+                        fieldErrors.dueDate ? "border-red-500" : ""
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(dueDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={(date) => {
+                        setDueDate(date)
+                        setIsCalendarOpen(false)
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {fieldErrors.dueDate && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.dueDate[0]}</p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="pointsPossible" className="text-[#5e8b7e]">
+                  Points Possible <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="pointsEarned"
+                  id="pointsPossible"
+                  name="pointsPossible"
                   type="number"
                   min="0"
-                  max={pointsPossible}
-                  value={pointsEarned !== undefined ? pointsEarned : ""}
-                  onChange={(e) => setPointsEarned(Number(e.target.value))}
-                  className="border-[#5e8b7e]/20"
+                  value={pointsPossible}
+                  onChange={(e) => setPointsPossible(Number(e.target.value))}
+                  className={cn("border-[#5e8b7e]/20", fieldErrors.pointsPossible ? "border-red-500" : "")}
                 />
-                <span className="text-[#5e8b7e]/70">/ {pointsPossible}</span>
+                {fieldErrors.pointsPossible && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.pointsPossible[0]}</p>
+                )}
               </div>
             </div>
-          )}
 
-          <div className="grid gap-2">
-            <Label htmlFor="course" className="text-[#5e8b7e]">
-              Related Course
-            </Label>
-            <Select value={courseId || "none"} onValueChange={(value) => setCourseId(value === "none" ? null : value)}>
-              <SelectTrigger id="course" className="border-[#5e8b7e]/20">
-                <SelectValue placeholder="Select a course (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {courses.map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid gap-2">
+              <Label htmlFor="status" className="text-[#5e8b7e]">
+                Status <span className="text-red-500">*</span>
+              </Label>
+              <Select 
+                value={status} 
+                onValueChange={setStatus} 
+                name="status"
+              >
+                <SelectTrigger 
+                  id="status" 
+                  className={cn("border-[#5e8b7e]/20", fieldErrors.status ? "border-red-500" : "")}
+                >
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Not Started">Not Started</SelectItem>
+                  <SelectItem value="Submitted">Submitted</SelectItem>
+                  <SelectItem value="Graded">Graded</SelectItem>
+                </SelectContent>
+              </Select>
+              {fieldErrors.status && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.status[0]}</p>
+              )}
+            </div>
+
+            {status === "Graded" && (
+              <div className="grid gap-2">
+                <Label htmlFor="pointsEarned" className="text-[#5e8b7e]">
+                  Points Earned <span className="text-red-500">*</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="pointsEarned"
+                    name="pointsEarned"
+                    type="number"
+                    min="0"
+                    max={pointsPossible}
+                    value={pointsEarned !== undefined ? pointsEarned : ""}
+                    onChange={(e) => setPointsEarned(Number(e.target.value))}
+                    className={cn("border-[#5e8b7e]/20", fieldErrors.pointsEarned ? "border-red-500" : "")}
+                  />
+                  <span className="text-[#5e8b7e]/70">/ {pointsPossible}</span>
+                </div>
+                {fieldErrors.pointsEarned && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.pointsEarned[0]}</p>
+                )}
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="courseId" className="text-[#5e8b7e]">
+                Related Course
+              </Label>
+              <Select 
+                value={courseId || "none"} 
+                onValueChange={(value) => setCourseId(value === "none" ? null : value)} 
+                name="courseId"
+              >
+                <SelectTrigger id="courseId" className="border-[#5e8b7e]/20">
+                  <SelectValue placeholder="Select a course (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Hidden date input to pass the formatted date to the server action */}
+            {dueDate && (
+              <input 
+                type="hidden" 
+                name="dueDate" 
+                value={dueDate.toISOString()} 
+              />
+            )}
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-[#5e8b7e] text-[#5e8b7e]">
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
-            Update Assignment
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              className="border-[#5e8b7e] text-[#5e8b7e]"
+            >
+              Cancel
+            </Button>
+            <SubmitButton />
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
