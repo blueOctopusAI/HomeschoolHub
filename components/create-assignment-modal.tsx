@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { useStore, type Assignment } from "@/lib/store"
+import { createAssignmentAction } from "@/app/assignments/form-actions"
+import { useActionState } from "react"
+import { useRouter } from "next/navigation"
+
+// Import our handler but don't use it with useActionState
+import { handleCreateAssignment } from "@/app/assignments/simple-handler"
 
 interface CreateAssignmentModalProps {
   open: boolean
@@ -27,12 +33,17 @@ interface CreateAssignmentModalProps {
 }
 
 export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentModalProps) {
-  // Get data and actions from Zustand store
+  // Get data from Zustand store
   const students = useStore((state) => state.students)
   const courses = useStore((state) => state.courses)
-  const addAssignment = useStore((state) => state.addAssignment)
   const selectedStudent = useStore((state) => state.selectedStudent)
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
+  // Use our server action
+  const [state, formAction] = useActionState(createAssignmentAction, { success: false, message: "" })
+
+  // Local state
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
@@ -41,9 +52,8 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
   const [status, setStatus] = useState<string>("Not Started")
   const [courseId, setCourseId] = useState<string | null>(null)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
 
-  // Reset form when modal opens
+  // Reset form
   const resetForm = () => {
     setTitle("")
     setDescription("")
@@ -53,7 +63,6 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
     setStatus("Not Started")
     setCourseId(null)
     setIsCalendarOpen(false)
-    setValidationError(null)
   }
 
   // Handle student selection
@@ -67,46 +76,12 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
     })
   }
 
-  // Handle form submission
-  const handleSubmit = () => {
-    // Validate required fields
-    if (!title) {
-      setValidationError("Please enter a title")
-      return
-    }
-
-    if (selectedStudentIds.length === 0) {
-      setValidationError("Please select at least one student")
-      return
-    }
-
-    if (!dueDate) {
-      setValidationError("Please select a due date")
-      return
-    }
-
-    if (pointsPossible <= 0) {
-      setValidationError("Points possible must be greater than 0")
-      return
-    }
-
-    // Clear validation error
-    setValidationError(null)
-
-    // Add assignment using the Zustand store action
-    addAssignment({
-      title,
-      description,
-      studentIds: selectedStudentIds,
-      dueDate: dueDate.toISOString(),
-      status: status as Assignment['status'],
-      pointsPossible,
-      courseId,
-    })
-
-    // Reset form and close modal
+  // Effect to close modal on successful submission
+  if (state?.success) {
+    // Force a refresh of the assignments page
     resetForm()
     onOpenChange(false)
+    router.refresh()
   }
 
   return (
@@ -125,15 +100,35 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
           <DialogDescription>Add a new assignment for your students to complete.</DialogDescription>
         </DialogHeader>
 
-        {validationError && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">{validationError}</div>}
+        {state?.message && (
+          <div className={`p-3 rounded-md text-sm mb-4 ${state.success ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {state.message}
+          </div>
+        )}
 
-        <div className="grid gap-4 py-4">
+        <form 
+          action={async (formData) => {
+            // This is a client-side wrapper function that calls our server action
+            startTransition(async () => {
+              try {
+                await handleCreateAssignment(formData);
+                resetForm();
+                onOpenChange(false);
+                router.refresh();
+              } catch (error) {
+                console.error("Error creating assignment:", error);
+              }
+            });
+          }}
+          className="grid gap-4 py-4"
+        >
           <div className="grid gap-2">
             <Label htmlFor="title" className="text-[#5e8b7e]">
               Assignment Title <span className="text-red-500">*</span>
             </Label>
             <Input
               id="title"
+              name="Assignment Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter assignment title"
@@ -147,6 +142,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
             </Label>
             <Textarea
               id="description"
+              name="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter assignment description"
@@ -166,6 +162,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                     <input
                       type="checkbox"
                       id={`student-${student.id}`}
+                      name={student.name}
                       checked={selectedStudentIds.includes(student.id)}
                       onChange={() => handleStudentSelection(student.id)}
                       className="mr-2 rounded border-[#5e8b7e]/20"
@@ -186,6 +183,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
+                    type="button"
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal border-[#5e8b7e]/20",
@@ -208,16 +206,22 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
                   />
                 </PopoverContent>
               </Popover>
+              <input 
+                type="hidden" 
+                name="Due Date" 
+                value={dueDate ? dueDate.toISOString() : ''} 
+              />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="points" className="text-[#5e8b7e]">
+              <Label htmlFor="pointsPossible" className="text-[#5e8b7e]">
                 Points Possible <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="points"
+                id="pointsPossible"
+                name="Points Possible"
                 type="number"
-                min="0"
+                min="1"
                 value={pointsPossible}
                 onChange={(e) => setPointsPossible(Number(e.target.value))}
                 className="border-[#5e8b7e]/20"
@@ -229,7 +233,11 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
             <Label htmlFor="status" className="text-[#5e8b7e]">
               Status <span className="text-red-500">*</span>
             </Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select 
+              value={status} 
+              onValueChange={setStatus} 
+              name="Status"
+            >
               <SelectTrigger id="status" className="border-[#5e8b7e]/20">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -242,15 +250,19 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="course" className="text-[#5e8b7e]">
+            <Label htmlFor="courseId" className="text-[#5e8b7e]">
               Related Course
             </Label>
-            <Select value={courseId || "none"} onValueChange={(value) => setCourseId(value === "none" ? null : value)}>
-              <SelectTrigger id="course" className="border-[#5e8b7e]/20">
+            <Select 
+              value={courseId || "None"} 
+              onValueChange={(value) => setCourseId(value === "None" ? null : value)} 
+              name="Related Course"
+            >
+              <SelectTrigger id="courseId" className="border-[#5e8b7e]/20">
                 <SelectValue placeholder="Select a course (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="None">None</SelectItem>
                 {courses.map((course) => (
                   <SelectItem key={course.id} value={course.id}>
                     {course.name}
@@ -259,23 +271,28 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              resetForm()
-              onOpenChange(false)
-            }}
-            className="border-[#5e8b7e] text-[#5e8b7e]"
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
-            Create Assignment
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                resetForm()
+                onOpenChange(false)
+              }}
+              className="border-[#5e8b7e] text-[#5e8b7e]"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
+              disabled={isPending}
+            >
+              {isPending ? "Creating..." : "Create Assignment"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
