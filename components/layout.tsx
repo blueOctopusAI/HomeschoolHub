@@ -33,6 +33,11 @@ export function Layout({ children }: { children: ReactNode }) {
     return pathname === "/login" || pathname === "/signup"
   }, [pathname])
   
+  // Check if this is a student portal page
+  const isStudentPortalPage = useMemo(() => {
+    return pathname.startsWith('/student/')
+  }, [pathname])
+  
   // If loading and the timeout hasn't occurred yet, show a loading indicator
   if (isLoading && !loadingTimeout) {
     return (
@@ -43,7 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   // For auth pages, don't show the app layout (sidebar/topbar)
-  if (isAuthPage) {
+  if (isAuthPage || isStudentPortalPage) {
     return (
       <div className="flex h-screen bg-[#faf9f5]">
         <main className="flex-1 overflow-auto p-4">{children}</main>
