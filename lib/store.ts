@@ -70,7 +70,7 @@ type Store = {
   lessons: Lesson[]
   courses: Course[]
   assignments: Assignment[]
-  isLoading: boolean
+
   
   // Auth state
   authUser: User | null
@@ -305,7 +305,7 @@ export const useStore = create<Store>((set) => ({
   lessons: sampleLessons,
   courses: sampleCourses,
   assignments: sampleAssignments,
-  isLoading: false,
+
   
   // Auth state (new)
   authUser: null,
