@@ -289,8 +289,22 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                       <div
                         key={lesson.id}
                         onClick={() => handleEditLesson(lesson)}
-                        className="bg-[#f0f4f2] rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5"
+                        className={cn(
+                          "rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5",
+                          lesson.completed 
+                            ? "bg-[#e6f4ea] border-l-4 border-l-green-500" 
+                            : "bg-[#f0f4f2]"
+                        )}
                       >
+                        {lesson.completed && (
+                          <div className="bg-green-100 rounded-t-md mx-[-8px] mt-[-4px] mb-1 px-2 py-0.5 text-xs text-green-800 font-medium border-b border-green-200 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            COMPLETED
+                          </div>
+                        )}
                         <div className="flex justify-between items-start">
                           <div className="font-medium text-[#5e8b7e] flex-1">
                             {lesson.subjectName}
@@ -301,7 +315,7 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className={`h-6 w-6 p-0 ${lesson.completed ? 'text-green-600' : 'text-gray-400'}`}
+                              className={`h-6 w-6 p-0 ${lesson.completed ? 'text-green-600 bg-green-50 border border-green-200 rounded-full' : 'text-gray-400 hover:text-green-600 hover:bg-green-50 hover:border hover:border-green-200 hover:rounded-full'}`}
                               onClick={(e) => handleToggleComplete(lesson.id, lesson.completed, e)}
                               disabled={isPending && isCurrentlyProcessing}
                             >
@@ -310,18 +324,6 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                               ) : (
                                 <Check className="h-3 w-3" />
                               )}
-                            </Button>
-                            
-                            {/* Edit button - explicit edit button for clarity */}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
-                              onClick={(e) => handleEditLesson(lesson, e)}
-                              disabled={isPending && isCurrentlyProcessing}
-                            >
-                              <Edit className="h-3 w-3" />
                             </Button>
                             
                             {/* Delete button */}
@@ -364,7 +366,7 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                           <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
                         )}
 
-                        {lesson.completed && <div className="mt-1 text-xs text-green-600 font-medium">✓ Completed</div>}
+                        {/* This completed indicator at the bottom is now redundant with our top banner and can be removed */}
                       </div>
                     )
                   })}

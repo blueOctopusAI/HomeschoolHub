@@ -304,41 +304,59 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                     <div
                       key={lesson.id}
                       onClick={() => handleEditLesson(lesson)}
-                      className="bg-[#f0f4f2] rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5"
+                      className={`${lesson.completed ? 'bg-[#e6f4ea] border-l-4 border-l-green-500' : 'bg-[#f0f4f2]'} rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5`}
                     >
-                      <div className="font-medium text-[#5e8b7e]">{lesson.subjectName}</div>
-                      <div className="text-xs text-[#5e8b7e] mt-1">
-                        {format(parseISO(lesson.startDate), "h:mm a")} - {format(parseISO(lesson.endDate), "h:mm a")}
-                      </div>
-
-                      {/* Student tags */}
-                      {lesson.studentIds.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {lesson.studentIds.map((id: string) => (
-                            <Badge
-                              key={id}
-                              className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5 font-normal"
-                            >
-                              {getStudentName(id)}
-                            </Badge>
-                          ))}
+                      <div>
+                        {lesson.completed && (
+                          <div className="bg-green-100 rounded-t-md mx-[-8px] mt-[-4px] mb-1 px-2 py-0.5 text-xs text-green-800 font-medium border-b border-green-200 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            COMPLETED
+                          </div>
+                        )}
+                        <div className="font-medium text-[#5e8b7e]">{lesson.subjectName}</div>
+                        <div className="text-xs text-[#5e8b7e] mt-1">
+                          {format(parseISO(lesson.startDate), "h:mm a")} - {format(parseISO(lesson.endDate), "h:mm a")}
                         </div>
-                      )}
 
-                      {lesson.description && (
-                        <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
-                      )}
+                        {/* Student tags */}
+                        {lesson.studentIds.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {lesson.studentIds.map((id: string) => (
+                              <Badge
+                                key={id}
+                                className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5 font-normal"
+                              >
+                                {getStudentName(id)}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
 
-                      <div className="mt-1 flex justify-between items-center">
-                        <div 
-                          className="cursor-pointer"
-                          onClick={(e) => handleToggleComplete(e, lesson.id)}
-                        >
-                          {lesson.completed ? (
-                            <span className="text-xs text-green-600 font-medium">✓ Completed</span>
-                          ) : (
-                            <span className="text-xs text-gray-500">Mark as complete</span>
-                          )}
+                        {lesson.description && (
+                          <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
+                        )}
+
+                        <div className="mt-1 flex justify-between items-center">
+                          <div 
+                            className="cursor-pointer"
+                            onClick={(e) => handleToggleComplete(e, lesson.id)}
+                          >
+                            {lesson.completed ? (
+                              <div className="flex items-center">
+                                <div className="bg-green-500 text-white rounded-full p-0.5 mr-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                  </svg>
+                                </div>
+                                <span className="text-xs font-medium text-green-700">Completed</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500 hover:text-gray-700">Mark as complete</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
