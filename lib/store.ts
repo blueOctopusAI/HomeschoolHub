@@ -75,6 +75,7 @@ type Store = {
   // Auth state
   authUser: User | null
   isAuthLoading: boolean
+  setStudents: (students: Student[]) => void
 
   // Actions
   setCurrentView: (view: View) => void
@@ -398,6 +399,8 @@ export const useStore = create<Store>((set) => ({
   // Auth actions (new)
   setAuthUser: (user) => set({ authUser: user }),
   setIsAuthLoading: (isLoading) => set({ isAuthLoading: isLoading }),
+  setStudents: (students) => set({ students }),
+  
 }))
 
 // Helper functions
