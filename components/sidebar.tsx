@@ -92,7 +92,7 @@ export function Sidebar() {
 
   return (
     <div className="fixed top-0 left-0 h-full w-[220px] bg-white border-r border-[#5e8b7e]/10 flex flex-col no-print">
-      <div className="p-4">
+      <div className="p-0">
         <Logo />
       </div>
 
