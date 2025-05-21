@@ -23,6 +23,7 @@ import { useStore, type Assignment } from "@/lib/store"
 import { createAssignment } from "@/app/assignments/actions"
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
 
 interface CreateAssignmentModalProps {
   open: boolean
@@ -36,6 +37,7 @@ export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection
   const selectedStudent = useStore((state) => state.selectedStudent)
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const { toast } = useToast()
 
   // Use our consolidated server action
   const [state, formAction] = useActionState(createAssignment, undefined)
@@ -73,15 +75,29 @@ export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection
     })
   }
 
-  // Effect to close modal on successful submission
+  // Effect to close modal on successful submission and show toast
   useEffect(() => {
     if (state?.success) {
       // Force a refresh of the assignments page
       resetForm()
       onOpenChange(false)
       router.refresh()
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: state.message || "Assignment created successfully",
+        variant: "default",
+      })
+    } else if (state?.message && !state?.success && !Object.keys(state?.errors || {}).length) {
+      // Show error toast for general errors (not field-specific)
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
-  }, [state?.success, resetForm, onOpenChange, router])
+  }, [state, resetForm, onOpenChange, router, toast])
 
   return (
     <Dialog

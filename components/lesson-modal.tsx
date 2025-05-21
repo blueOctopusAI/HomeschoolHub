@@ -16,6 +16,7 @@ import { format } from "date-fns"
 import { createLesson, updateLesson } from "@/app/calendar/lessons-actions"
 import { useRouter } from "next/navigation"
 import { useActionState } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface LessonModalProps {
   isOpen: boolean
@@ -31,6 +32,7 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
+  const { toast } = useToast()
   
   // Use useActionState for server actions
   const [createState, createAction] = useActionState(createLesson, undefined)
@@ -90,13 +92,27 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
     }
   }, [editingLesson, selectedDate, isOpen, defaultLesson])
   
-  // Effect to close modal on successful action
+  // Effect to close modal on successful action and show toast
   useEffect(() => {
     if (state?.success) {
       onClose()
       router.refresh()
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: state.message || `Lesson ${editingLesson ? 'updated' : 'scheduled'} successfully`,
+        variant: "default",
+      })
+    } else if (state?.message && !state?.success && !Object.keys(state?.errors || {}).length) {
+      // Show error toast for general errors (not field-specific)
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
-  }, [state?.success, onClose, router])
+  }, [state, onClose, router, toast, editingLesson])
 
   // Handle input changes - use useCallback to prevent recreation on each render
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

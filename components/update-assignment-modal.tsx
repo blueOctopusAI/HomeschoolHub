@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { useStore, type Assignment } from "@/lib/store"
 import { updateAssignment } from "@/app/assignments/actions"
 import { useActionState } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface UpdateAssignmentModalProps {
   open: boolean
@@ -40,6 +41,7 @@ const initialState = {
 export function UpdateAssignmentModal({ open, onOpenChange, assignment, studentsForSelection = [], coursesForSelection = [] }: UpdateAssignmentModalProps) {
   // Form state with React useActionState hook
   const [state, formAction] = useActionState(updateAssignment, initialState)
+  const { toast } = useToast()
 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -66,12 +68,26 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
     }
   }, [assignment])
 
-  // Close modal on successful update
+  // Close modal on successful update and show toast
   useEffect(() => {
     if (state.success) {
       onOpenChange(false)
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: state.message || "Assignment updated successfully",
+        variant: "default",
+      })
+    } else if (state.message && !state.success && !Object.keys(state.errors || {}).length) {
+      // Show error toast for general errors (not field-specific)
+      toast({
+        title: "Error",
+        description: state.message,
+        variant: "destructive",
+      })
     }
-  }, [state.success, onOpenChange])
+  }, [state, onOpenChange, toast])
 
   // Handle student selection
   const handleStudentSelection = (studentId: string) => {

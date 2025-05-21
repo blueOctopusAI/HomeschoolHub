@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createCourse } from "@/app/courses/actions"
+import { useToast } from "@/components/ui/use-toast"
 
 interface AddCourseModalProps {
   isOpen: boolean
@@ -66,6 +67,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
   // Use server action with useActionState
   const [state, formAction] = useActionState(createCourse, undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   // Local state for form fields
   const [name, setName] = useState("")
@@ -90,16 +92,32 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
     }
   }, [isOpen])
 
-  // Close modal on successful submission
+  // Close modal on successful submission and show toast
   useEffect(() => {
     if (state?.success) {
       onOpenChange(false)
       setIsSubmitting(false)
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: state.message || "Course added successfully",
+        variant: "default",
+      })
     } else if (state && !state.success) {
       // If there was an error, also stop submitting
       setIsSubmitting(false)
+      
+      // Show error toast for general errors (not field-specific)
+      if (state.message && !Object.keys(state.errors || {}).length) {
+        toast({
+          title: "Error",
+          description: state.message,
+          variant: "destructive",
+        })
+      }
     }
-  }, [state, onOpenChange])
+  }, [state, onOpenChange, toast])
 
   // Handle form submission
   const handleSubmit = async (formData: FormData) => {

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
 // Loading button component with pending state
 function SubmitButton() {
@@ -45,6 +46,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ profile }: ProfileFormProps) {
   const [state, formAction] = useActionState(updateMyProfile, initialState)
+  const { toast } = useToast()
   
   // Form fields state to handle pre-filling
   const [fullName, setFullName] = useState(profile?.full_name || '')
@@ -59,6 +61,26 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       setAvatarUrl(profile.avatar_url || '')
     }
   }, [profile])
+  
+  // Show toast notifications when state changes
+  useEffect(() => {
+    if (state?.message) {
+      if (state.success) {
+        toast({
+          title: "Success",
+          description: state.message,
+          variant: "default",
+        })
+      } else if (Object.keys(state.errors || {}).length === 0) {
+        // Only show error toast for general errors, not field-specific ones
+        toast({
+          title: "Error",
+          description: state.message,
+          variant: "destructive",
+        })
+      }
+    }
+  }, [state, toast])
 
   return (
     <Card className="w-full max-w-2xl mx-auto">

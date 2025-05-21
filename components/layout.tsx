@@ -6,6 +6,7 @@ import { Topbar } from "./topbar"
 import { useAuthUser, useAuthLoading } from "@/lib/store"
 import { usePathname } from "next/navigation"
 import { useMemo } from "react"
+import { Toaster } from "@/components/ui/toaster"
 
 export function Layout({ children }: { children: ReactNode }) {
   // Use separate selectors for auth state
@@ -32,6 +33,7 @@ export function Layout({ children }: { children: ReactNode }) {
     return (
       <div className="flex h-screen bg-[#faf9f5]">
         <main className="flex-1 overflow-auto p-4">{children}</main>
+        <Toaster />
       </div>
     )
   }
@@ -44,6 +46,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <Topbar />
         <main className="flex-1 overflow-auto p-4">{children}</main>
       </div>
+      <Toaster />
     </div>
   )
 }
