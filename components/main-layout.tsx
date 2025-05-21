@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useStore } from "@/lib/store"
 import { usePathname } from "next/navigation"
 import type { View } from "@/lib/store"
-import { DataSyncInitializer } from "@/components/data-sync-initializer"
+import { useSyncStoreWithSupabase } from "@/lib/hooks/use-sync-store"
 
 // List of valid views
 const VALID_VIEWS = [
@@ -16,6 +16,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   // Get minimal state from store
   const setCurrentView = useStore((state) => state.setCurrentView)
   const pathname = usePathname()
+  
+  // Sync Supabase data with Zustand store
+  const { loading, errors, hasErrors } = useSyncStoreWithSupabase()
 
   // Sync pathname with current view in store
   useEffect(() => {
@@ -30,11 +33,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       console.error('Error syncing path to view:', error)
     }
   }, [pathname, setCurrentView])
+  
+  // Log any data loading errors
+  useEffect(() => {
+    if (hasErrors) {
+      console.error('Errors loading data:', errors)
+    }
+  }, [hasErrors, errors])
 
-  // Wrap children with DataSyncInitializer for automatic database synchronization
-  return (
-    <DataSyncInitializer>
-      {children}
-    </DataSyncInitializer>
-  )
+  // Return the children wrapped in our data context
+  return <>{children}</>
 }
