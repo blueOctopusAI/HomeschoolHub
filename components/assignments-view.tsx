@@ -12,15 +12,24 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CreateAssignmentModal } from "./create-assignment-modal"
 import { UpdateAssignmentModal } from "./update-assignment-modal"
-import { useStore, type Assignment } from "@/lib/store"
+import { useStore, type Assignment, type Student, type Course } from "@/lib/store"
 
-export function AssignmentsView() {
-  // Get data from Zustand store
-  const assignments = useStore((state) => state.assignments)
-  const students = useStore((state) => state.students)
-  const courses = useStore((state) => state.courses)
+// Define prop types for AssignmentsView
+interface AssignmentsViewProps {
+  initialAssignments: Array<Assignment & { studentIds: string[] }>;
+  userStudents: Student[];
+  userCourses: Course[];
+}
+
+export function AssignmentsView({ initialAssignments, userStudents, userCourses }: AssignmentsViewProps) {
+  // Get selected student and deleteAssignment action from Zustand store
   const selectedStudent = useStore((state) => state.selectedStudent)
   const deleteAssignment = useStore((state) => state.deleteAssignment)
+  
+  // Use the props instead of Zustand store for assignments, students, and courses
+  const assignments = initialAssignments
+  const students = userStudents
+  const courses = userCourses
 
   // Local state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -95,6 +104,8 @@ export function AssignmentsView() {
   const handleDeleteAssignment = (assignmentId: string) => {
     if (confirm("Are you sure you want to delete this assignment?")) {
       deleteAssignment(assignmentId)
+      // Note: This will update the Zustand store but not the prop-driven list
+      // This will be addressed in a subsequent task (2.5)
     }
   }
 

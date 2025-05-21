@@ -4,17 +4,16 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 // For use in Server Components where cookies are read-only
-export function createSupabaseServerComponentClient() {
-  const cookieStore = cookies()
+export async function createSupabaseServerComponentClient() {
+  const cookieStore = await cookies()
   
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookie = await cookieStore.get(name)
-          return cookie?.value
+        get(name: string) {
+          return cookieStore.get(name)?.value
         },
         // For Server Components, set and remove are no-ops as cookies() is read-only.
         set(name: string, value: string, options: CookieOptions) {},
@@ -28,16 +27,15 @@ export function createSupabaseServerComponentClient() {
 // This approach follows the official Supabase docs for Server Actions
 export async function createSupabaseServerActionClient() {
   "use server"
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookie = await cookieStore.get(name)
-          return cookie?.value
+        get(name: string) {
+          return cookieStore.get(name)?.value
         },
         async set(name: string, value: string, options: CookieOptions) {
           await cookieStore.set(name, value, options)
