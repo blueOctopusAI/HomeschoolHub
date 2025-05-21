@@ -21,30 +21,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useStore, type Assignment } from "@/lib/store"
 import { updateAssignment } from "@/app/assignments/actions"
-import { useActionState, useFormStatus } from "react"
-
-// Submit button with loading state
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <Button type="submit" disabled={pending} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Updating...
-        </>
-      ) : (
-        "Update Assignment"
-      )}
-    </Button>
-  )
-}
+import { useActionState } from "react"
 
 interface UpdateAssignmentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   assignment: Assignment | null
+  studentsForSelection?: Student[]
+  coursesForSelection?: Course[]
 }
 
 const initialState = {
@@ -53,11 +37,7 @@ const initialState = {
   errors: {}
 }
 
-export function UpdateAssignmentModal({ open, onOpenChange, assignment }: UpdateAssignmentModalProps) {
-  // Get data from Zustand store
-  const students = useStore((state) => state.students)
-  const courses = useStore((state) => state.courses)
-
+export function UpdateAssignmentModal({ open, onOpenChange, assignment, studentsForSelection = [], coursesForSelection = [] }: UpdateAssignmentModalProps) {
   // Form state with React useActionState hook
   const [state, formAction] = useActionState(updateAssignment, initialState)
 
@@ -70,6 +50,7 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
   const [courseId, setCourseId] = useState<string | null>(null)
   const [status, setStatus] = useState<string>("Not Started")
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Update form when assignment changes
   useEffect(() => {
@@ -120,7 +101,17 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
           <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">{state.message}</div>
         )}
 
-        <form action={formAction} className="space-y-4">
+        <form 
+          action={async (formData) => {
+            setIsSubmitting(true);
+            try {
+              await formAction(formData);
+            } finally {
+              // State.success effect will handle closing if successful
+              setIsSubmitting(false);
+            }
+          }} 
+          className="space-y-4">
           {/* Hidden assignment ID field */}
           <input type="hidden" name="assignmentId" value={assignment.id} />
           <input type="hidden" name="studentIds" value={selectedStudentIds.join(',')} />
@@ -165,7 +156,7 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
                 "flex flex-wrap gap-2 border rounded-md p-2 border-[#5e8b7e]/20",
                 fieldErrors.studentIds ? "border-red-500" : ""
               )}>
-                {students
+                {studentsForSelection
                   .filter((s) => s.id !== "all")
                   .map((student) => (
                     <div key={student.id} className="flex items-center">
@@ -307,7 +298,7 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {courses.map((course) => (
+                  {coursesForSelection.map((course) => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.name}
                     </SelectItem>
@@ -332,10 +323,24 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment }: Update
               variant="outline" 
               onClick={() => onOpenChange(false)} 
               className="border-[#5e8b7e] text-[#5e8b7e]"
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <SubmitButton />
+            <Button 
+              type="submit" 
+              disabled={isSubmitting} 
+              className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Assignment"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

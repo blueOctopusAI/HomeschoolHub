@@ -30,12 +30,12 @@ import { handleCreateAssignment } from "@/app/assignments/simple-handler"
 interface CreateAssignmentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  studentsForSelection?: Student[]
+  coursesForSelection?: Course[]
 }
 
-export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentModalProps) {
-  // Get data from Zustand store
-  const students = useStore((state) => state.students)
-  const courses = useStore((state) => state.courses)
+export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection = [], coursesForSelection = [] }: CreateAssignmentModalProps) {
+  // Get selected student from Zustand store
   const selectedStudent = useStore((state) => state.selectedStudent)
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -155,7 +155,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
               Assign To <span className="text-red-500">*</span>
             </Label>
             <div className="flex flex-wrap gap-2 border rounded-md p-2 border-[#5e8b7e]/20">
-              {students
+              {studentsForSelection
                 .filter((s) => s.id !== "all")
                 .map((student) => (
                   <div key={student.id} className="flex items-center">
@@ -263,7 +263,7 @@ export function CreateAssignmentModal({ open, onOpenChange }: CreateAssignmentMo
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="None">None</SelectItem>
-                {courses.map((course) => (
+                {coursesForSelection.map((course) => (
                   <SelectItem key={course.id} value={course.id}>
                     {course.name}
                   </SelectItem>

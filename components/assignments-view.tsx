@@ -332,12 +332,19 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
         </CardContent>
       </Card>
 
-      <CreateAssignmentModal open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+      <CreateAssignmentModal 
+        open={isCreateModalOpen} 
+        onOpenChange={setIsCreateModalOpen} 
+        studentsForSelection={students} 
+        coursesForSelection={courses} 
+      />
 
       <UpdateAssignmentModal
         open={isUpdateModalOpen}
         onOpenChange={setIsUpdateModalOpen}
         assignment={editingAssignment}
+        studentsForSelection={students} 
+        coursesForSelection={courses} 
       />
     </div>
   )
