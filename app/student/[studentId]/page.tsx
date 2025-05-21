@@ -2,7 +2,8 @@ import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import StudentPortalLayout from "@/components/student-portal-layout";
-import StudentChecklistView from "@/components/student-checklist-view";
+import StudentChecklistWithActions from "@/components/student-checklist-with-actions";
+import StudentAssignmentActions from "@/components/student-assignment-actions";
 
 interface StudentPortalPageProps {
   params: {
@@ -190,36 +191,13 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
         {/* Today's Checklist with integrated component */}
         <div className="mb-8 bg-white p-5 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold text-sage-700 mb-3">Today's Checklist</h3>
-          <StudentChecklistView lessons={todaysLessons} />
+          <StudentChecklistWithActions lessons={todaysLessons} studentId={student.id} />
         </div>
 
         {/* Upcoming Assignments */}
         <div className="bg-white p-5 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold text-sage-700 mb-3">Upcoming Assignments</h3>
-          {upcomingAssignments.length > 0 ? (
-            <ul className="space-y-3">
-              {upcomingAssignments.map((assignment) => (
-                <li key={assignment.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-gray-800">{assignment.title}</h4>
-                      <p className="text-sm text-gray-500">
-                        Due: {new Date(assignment.due_date).toLocaleDateString()} 
-                      </p>
-                      {assignment.description && (
-                        <p className="text-sm text-gray-600 mt-1">{assignment.description}</p>
-                      )}
-                    </div>
-                    <div className="bg-sage-100 px-2 py-1 rounded text-xs font-medium text-sage-800">
-                      {assignment.status}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500 italic">No upcoming assignments.</p>
-          )}
+          <StudentAssignmentActions assignments={upcomingAssignments} studentId={student.id} />
         </div>
       </div>
     </StudentPortalLayout>

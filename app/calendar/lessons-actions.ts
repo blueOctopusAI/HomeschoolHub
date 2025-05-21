@@ -166,8 +166,9 @@ export async function createLesson(
       }
     }
     
-    // Revalidate the calendar page
+    // Revalidate both calendar and student pages
     revalidatePath('/calendar')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,
@@ -388,8 +389,9 @@ export async function updateLesson(
       }
     }
     
-    // Revalidate the calendar page
+    // Revalidate both calendar and student pages
     revalidatePath('/calendar')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,
@@ -472,8 +474,9 @@ export async function deleteLesson(
       }
     }
     
-    // Revalidate the calendar page
+    // Revalidate both calendar and student pages
     revalidatePath('/calendar')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,
@@ -559,8 +562,9 @@ export async function toggleLessonComplete(
       }
     }
     
-    // Revalidate the calendar page
+    // Revalidate both calendar and student pages
     revalidatePath('/calendar')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,

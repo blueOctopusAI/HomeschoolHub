@@ -949,8 +949,22 @@
         "parentKey": "components"
       },
       {
+        "key": "components/student-assignment-actions.tsx",
+        "title": "student-assignment-actions.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
         "key": "components/student-checklist-view.tsx",
         "title": "student-checklist-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/student-checklist-with-actions.tsx",
+        "title": "student-checklist-with-actions.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"

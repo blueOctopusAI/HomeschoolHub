@@ -125,6 +125,7 @@ export async function createAssignment(
     
     // Revalidate the assignments page
     revalidatePath('/assignments')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,
@@ -337,6 +338,7 @@ export async function updateAssignment(
     
     // Revalidate the assignments page
     revalidatePath('/assignments')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,
@@ -403,6 +405,7 @@ export async function deleteAssignment(formData: FormData): Promise<ActionResult
     
     // Revalidate the assignments page
     revalidatePath('/assignments')
+    revalidatePath('/student', 'layout')
     
     return {
       success: true,
@@ -410,6 +413,87 @@ export async function deleteAssignment(formData: FormData): Promise<ActionResult
     }
   } catch (error) {
     console.error("Assignment deletion error:", error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "An unexpected error occurred."
+    }
+  }
+}
+
+/**
+ * Updates the status of an existing assignment
+ */
+export async function updateAssignmentStatus(
+  prevState: ActionResult | undefined,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    // Create Supabase client
+    const supabase = await createSupabaseServerActionClient()
+    
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // Check if user is authenticated
+    if (!user) {
+      return {
+        success: false,
+        message: "User not authenticated."
+      }
+    }
+    
+    // Extract assignment ID and new status
+    const assignmentId = formData.get('assignmentId')?.toString()
+    const newStatus = formData.get('status')?.toString()
+    
+    if (!assignmentId || !newStatus) {
+      return {
+        success: false,
+        message: "Assignment ID and status are required."
+      }
+    }
+    
+    // Check that the assignment exists and belongs to this user
+    const { data: existingAssignment, error: checkError } = await supabase
+      .from('assignments')
+      .select('id')
+      .eq('id', assignmentId)
+      .eq('user_id', user.id)
+      .single()
+    
+    if (checkError || !existingAssignment) {
+      return {
+        success: false,
+        message: "Assignment not found or you don't have permission to update it."
+      }
+    }
+    
+    // Update the assignment status
+    const { error } = await supabase
+      .from('assignments')
+      .update({ status: newStatus })
+      .eq('id', assignmentId)
+      .eq('user_id', user.id)
+    
+    if (error) {
+      console.error("Error updating assignment status:", error)
+      return {
+        success: false,
+        message: error.message || "Failed to update assignment status."
+      }
+    }
+    
+    // Revalidate both assignments and student pages
+    revalidatePath('/assignments')
+    revalidatePath('/student', 'layout')
+    
+    return {
+      success: true,
+      message: `Assignment marked as ${newStatus}.`
+    }
+    
+  } catch (error) {
+    console.error("Assignment status update error:", error)
     return {
       success: false,
       message: error instanceof Error ? error.message : "An unexpected error occurred."
