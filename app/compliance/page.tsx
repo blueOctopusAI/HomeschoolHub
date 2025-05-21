@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { ComplianceView } from "@/components/compliance-view"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { Student } from "@/lib/store"
+import { LoggedHour } from "@/lib/types"
+import { ReadonlyURLSearchParams } from "next/navigation"
 
 export default async function CompliancePage() {
   try {
@@ -32,12 +34,27 @@ export default async function CompliancePage() {
     if (studentsError) {
       console.error("Error fetching students:", studentsError);
     }
+
+    // Fetch all logged hours for the user's students
+    // The component will filter these by selectedStudent clientside
+    const { data: loggedHours, error: loggedHoursError } = await supabase
+      .from('logged_hours')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('log_date', { ascending: false });
+    
+    if (loggedHoursError) {
+      console.error("Error fetching logged hours:", loggedHoursError);
+    }
     
     return (
-      <ComplianceView userStudents={userStudents as Student[] || []} />
+      <ComplianceView 
+        userStudents={userStudents as Student[] || []} 
+        initialLoggedHours={loggedHours as LoggedHour[] || []}
+      />
     );
   } catch (error) {
     console.error("Unhandled error in CompliancePage:", error);
-    return <div>Error loading compliance tracker. Please check the console for details.</div>;
+    return <div>Error loading compliance tracker. Please try again later.</div>;
   }
 }

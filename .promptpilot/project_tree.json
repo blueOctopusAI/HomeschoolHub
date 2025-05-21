@@ -155,6 +155,13 @@
         "title": "compliance",
         "children": [
           {
+            "key": "app/compliance/actions.ts",
+            "title": "actions.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/compliance"
+          },
+          {
             "key": "app/compliance/page.tsx",
             "title": "page.tsx",
             "children": [],
