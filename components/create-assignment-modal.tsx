@@ -77,27 +77,32 @@ export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection
 
   // Effect to close modal on successful submission and show toast
   useEffect(() => {
-    if (state?.success) {
+    // Only run this effect if state exists and has changed
+    if (!state) return;
+    
+    if (state.success) {
       // Force a refresh of the assignments page
-      resetForm()
-      onOpenChange(false)
-      router.refresh()
+      resetForm();
+      onOpenChange(false);
+      router.refresh();
       
       // Show success toast
       toast({
         title: "Success",
         description: state.message || "Assignment created successfully",
         variant: "default",
-      })
-    } else if (state?.message && !state?.success && !Object.keys(state?.errors || {}).length) {
+      });
+    } else if (state.message && !state.success && !Object.keys(state.errors || {}).length) {
       // Show error toast for general errors (not field-specific)
       toast({
         title: "Error",
         description: state.message,
         variant: "destructive",
-      })
+      });
     }
-  }, [state, resetForm, onOpenChange, router, toast])
+    // Removed dependencies that might cause re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <Dialog

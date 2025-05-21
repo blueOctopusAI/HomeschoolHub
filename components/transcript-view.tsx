@@ -70,7 +70,7 @@ export function TranscriptView() {
 
   // Fetch courses from Supabase when the selected student changes or after adding a new course
   useEffect(() => {
-    if (selectedStudentId === "all") {
+    if (selectedStudentId === "all" || !databaseStudentId) {
       setDatabaseCourses([]);
       return;
     }
@@ -98,7 +98,7 @@ export function TranscriptView() {
     };
 
     fetchCourses();
-  }, [databaseStudentId, refreshKey]);
+  }, [databaseStudentId, refreshKey, selectedStudentId]);
 
   // Convert database courses to the format expected by the UI
   const transformedCourses = useMemo(() => {

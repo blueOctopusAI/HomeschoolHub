@@ -87,7 +87,7 @@ export async function createAssignment(
         due_date: restOfData.dueDate,
         status: restOfData.status,
         points_possible: restOfData.pointsPossible,
-        course_id: restOfData.courseId === 'none' ? null : restOfData.courseId,
+        course_id: (!restOfData.courseId || restOfData.courseId === 'None' || restOfData.courseId === 'none') ? null : restOfData.courseId,
       })
       .select('id')
       .single()
@@ -249,7 +249,7 @@ export async function updateAssignment(
       due_date: restOfData.dueDate,
       status: restOfData.status,
       points_possible: restOfData.pointsPossible,
-      course_id: restOfData.courseId === 'none' ? null : restOfData.courseId,
+      course_id: (!restOfData.courseId || restOfData.courseId === 'None' || restOfData.courseId === 'none') ? null : restOfData.courseId,
     }
     
     // Add points earned if status is 'Graded'
