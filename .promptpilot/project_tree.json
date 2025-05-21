@@ -159,6 +159,21 @@
         "parentKey": "app"
       },
       {
+        "key": "app/courses",
+        "title": "courses",
+        "children": [
+          {
+            "key": "app/courses/actions.ts",
+            "title": "actions.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/courses"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/dashboard",
         "title": "dashboard",
         "children": [

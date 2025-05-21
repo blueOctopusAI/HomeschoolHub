@@ -1,8 +1,7 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
+import { useActionState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -15,13 +14,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { createCourse } from "@/app/courses/actions"
 
 interface AddCourseModalProps {
-  open: boolean
+  isOpen: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (course: any) => void
-  editingCourse: any | null
-  students: any[]
+  studentIdForCourse: string
 }
 
 // Subject categories
@@ -47,125 +45,129 @@ const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "
 // Academic year options
 const academicYearOptions = ["2022-2023", "2023-2024", "2024-2025", "2025-2026", "2026-2027"]
 
-export function AddCourseModal({ open, onOpenChange, onSave, editingCourse, students }: AddCourseModalProps) {
-  const [course, setCourse] = useState<any>({
-    name: "",
-    category: "Mathematics",
-    term: "Full Year",
-    grade: "A",
-    credits: 1.0,
-    studentId: "",
-    academicYear: "2024-2025", // Default to current academic year
-  })
+export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: AddCourseModalProps) {
+  // Use server action with useActionState
+  const [state, formAction] = useActionState(createCourse, undefined)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Update form when editing an existing course
+  // Local state for form fields
+  const [name, setName] = useState("")
+  const [category, setCategory] = useState("Mathematics")
+  const [term, setTerm] = useState<(typeof termOptions)[number]>("Full Year")
+  const [grade, setGrade] = useState("A")
+  const [credits, setCredits] = useState(1.0)
+  const [academicYear, setAcademicYear] = useState("2024-2025")
+
+  // Reset form when modal is opened/closed
   useEffect(() => {
-    if (editingCourse) {
-      setCourse({
-        name: editingCourse.name || "",
-        category: editingCourse.category || "Mathematics",
-        term: editingCourse.term || "Full Year",
-        grade: editingCourse.grade || "A",
-        credits: editingCourse.credits || 1.0,
-        studentId: editingCourse.studentId || "",
-        academicYear: editingCourse.academicYear || "2024-2025",
-      })
-    } else if (open) {
+    if (isOpen) {
       // Reset form for new course
-      setCourse({
-        name: "",
-        category: "Mathematics",
-        term: "Full Year",
-        grade: "A",
-        credits: 1.0,
-        studentId: students.find((s) => s.id !== "all")?.id || "",
-        academicYear: "2024-2025",
-      })
+      setName("")
+      setCategory("Mathematics")
+      setTerm("Full Year")
+      setGrade("A")
+      setCredits(1.0)
+      setAcademicYear("2024-2025")
     }
-  }, [editingCourse, open, students])
+  }, [isOpen])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setCourse((prev: any) => ({
-      ...prev,
-      [name]: name === "credits" ? Number.parseFloat(value) || 0 : value,
-    }))
-  }
-
-  const handleSelectChange = (name: string, value: string) => {
-    setCourse((prev: any) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = () => {
-    // Validate form
-    if (!course.name.trim()) {
-      alert("Please enter a course name")
-      return
+  // Close modal on successful submission
+  useEffect(() => {
+    if (state?.success) {
+      onOpenChange(false)
+      setIsSubmitting(false)
     }
+  }, [state?.success, onOpenChange])
 
-    if (!course.studentId) {
-      alert("Please select a student")
-      return
+  // Handle form submission
+  const handleSubmit = async (formData: FormData) => {
+    setIsSubmitting(true)
+    try {
+      await formAction(formData)
+    } finally {
+      // If there was an error, we'll still need to enable the button again
+      if (!state?.success) {
+        setIsSubmitting(false)
+      }
     }
-
-    // Save the course
-    onSave(course)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#faf9f5] max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#5e8b7e]">{editingCourse ? "Edit Course" : "Add New Course"}</DialogTitle>
+          <DialogTitle className="text-[#5e8b7e]">Add New Course</DialogTitle>
           <DialogDescription className="text-[#5e8b7e]/70">
-            {editingCourse
-              ? "Update the course information below."
-              : "Enter the details for the course you want to add to the transcript."}
+            Enter the details for the course you want to add to the transcript.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        {state?.message && (
+          <div
+            className={`p-3 rounded-md text-sm ${
+              state.success ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+            }`}
+          >
+            {state.message}
+          </div>
+        )}
+
+        <form action={handleSubmit} className="grid gap-4 py-4">
+          {/* Hidden input for student ID */}
+          <input type="hidden" name="studentId" value={studentIdForCourse} />
+
           <div className="grid gap-2">
             <Label htmlFor="name" className="text-[#5e8b7e]">
-              Course Name
+              Course Name <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
               name="name"
-              value={course.name}
-              onChange={handleInputChange}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Algebra I, Biology, etc."
-              className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30"
+              className={`border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30 ${
+                state?.errors?.name ? "border-red-500" : ""
+              }`}
             />
+            {state?.errors?.name && <p className="text-red-500 text-xs mt-1">{state.errors.name[0]}</p>}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="category" className="text-[#5e8b7e]">
-              Subject Category
+              Subject Category <span className="text-red-500">*</span>
             </Label>
-            <Select value={course.category} onValueChange={(value) => handleSelectChange("category", value)}>
-              <SelectTrigger id="category" className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30">
+            <Select name="category" value={category} onValueChange={setCategory}>
+              <SelectTrigger
+                id="category"
+                className={`border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30 ${
+                  state?.errors?.category ? "border-red-500" : ""
+                }`}
+              >
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {subjectCategories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                {subjectCategories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {state?.errors?.category && <p className="text-red-500 text-xs mt-1">{state.errors.category[0]}</p>}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="academicYear" className="text-[#5e8b7e]">
               Academic Year
             </Label>
-            <Select value={course.academicYear} onValueChange={(value) => handleSelectChange("academicYear", value)}>
-              <SelectTrigger id="academicYear" className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30">
+            <Select name="academicYear" value={academicYear} onValueChange={setAcademicYear}>
+              <SelectTrigger
+                id="academicYear"
+                className={`border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30 ${
+                  state?.errors?.academicYear ? "border-red-500" : ""
+                }`}
+              >
                 <SelectValue placeholder="Select academic year" />
               </SelectTrigger>
               <SelectContent>
@@ -176,51 +178,63 @@ export function AddCourseModal({ open, onOpenChange, onSave, editingCourse, stud
                 ))}
               </SelectContent>
             </Select>
+            {state?.errors?.academicYear && (
+              <p className="text-red-500 text-xs mt-1">{state.errors.academicYear[0]}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="term" className="text-[#5e8b7e]">
-              Term
+              Term <span className="text-red-500">*</span>
             </Label>
-            <Select
-              value={course.term}
-              onValueChange={(value) => handleSelectChange("term", value as (typeof termOptions)[number])}
-            >
-              <SelectTrigger id="term" className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30">
+            <Select name="term" value={term} onValueChange={(value) => setTerm(value as (typeof termOptions)[number])}>
+              <SelectTrigger
+                id="term"
+                className={`border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30 ${
+                  state?.errors?.term ? "border-red-500" : ""
+                }`}
+              >
                 <SelectValue placeholder="Select term" />
               </SelectTrigger>
               <SelectContent>
-                {termOptions.map((term) => (
-                  <SelectItem key={term} value={term}>
-                    {term}
+                {termOptions.map((termOption) => (
+                  <SelectItem key={termOption} value={termOption}>
+                    {termOption}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {state?.errors?.term && <p className="text-red-500 text-xs mt-1">{state.errors.term[0]}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="grade" className="text-[#5e8b7e]">
-                Grade
+                Grade <span className="text-red-500">*</span>
               </Label>
-              <Select value={course.grade} onValueChange={(value) => handleSelectChange("grade", value)}>
-                <SelectTrigger id="grade" className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30">
+              <Select name="grade" value={grade} onValueChange={setGrade}>
+                <SelectTrigger
+                  id="grade"
+                  className={`border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30 ${
+                    state?.errors?.grade ? "border-red-500" : ""
+                  }`}
+                >
                   <SelectValue placeholder="Select grade" />
                 </SelectTrigger>
                 <SelectContent>
-                  {gradeOptions.map((grade) => (
-                    <SelectItem key={grade} value={grade}>
-                      {grade}
+                  {gradeOptions.map((gradeOption) => (
+                    <SelectItem key={gradeOption} value={gradeOption}>
+                      {gradeOption}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {state?.errors?.grade && <p className="text-red-500 text-xs mt-1">{state.errors.grade[0]}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="credits" className="text-[#5e8b7e]">
-                Credits
+                Credits <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="credits"
@@ -229,46 +243,34 @@ export function AddCourseModal({ open, onOpenChange, onSave, editingCourse, stud
                 step="0.5"
                 min="0"
                 max="5"
-                value={course.credits}
-                onChange={handleInputChange}
-                className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30"
+                value={credits}
+                onChange={(e) => setCredits(Number(e.target.value))}
+                className={`border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30 ${
+                  state?.errors?.credits ? "border-red-500" : ""
+                }`}
               />
+              {state?.errors?.credits && <p className="text-red-500 text-xs mt-1">{state.errors.credits[0]}</p>}
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="studentId" className="text-[#5e8b7e]">
-              Student
-            </Label>
-            <Select value={course.studentId} onValueChange={(value) => handleSelectChange("studentId", value)}>
-              <SelectTrigger id="studentId" className="border-[#5e8b7e]/20 bg-white focus-visible:ring-[#5e8b7e]/30">
-                <SelectValue placeholder="Select student" />
-              </SelectTrigger>
-              <SelectContent>
-                {students
-                  .filter((student) => student.id !== "all")
-                  .map((student) => (
-                    <SelectItem key={student.id} value={student.id}>
-                      {student.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] hover:text-[#5e8b7e]"
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
-            {editingCourse ? "Update Course" : "Add Course"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] hover:text-[#5e8b7e]"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
+            >
+              {isSubmitting ? "Adding..." : "Add Course"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
