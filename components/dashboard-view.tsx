@@ -119,7 +119,7 @@ export const DashboardView = memo(function DashboardView() {
         {student.gradeLevel && <p className="text-[#5e8b7e]/70">{student.gradeLevel}</p>}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Today's Focus */}
         <Card className="bg-white shadow-sm rounded-md">
           <CardHeader className="pb-2">
@@ -131,10 +131,10 @@ export const DashboardView = memo(function DashboardView() {
           </CardHeader>
           <CardContent>
             {todaysLessons.length > 0 ? (
-              <div className="space-y-3">
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {todaysLessons.map((lesson) => (
                   <div key={lesson.id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col h-full justify-between">
                       <div>
                         <div className="font-medium text-[#5e8b7e]">{lesson.subjectName}</div>
                         <div className="text-sm text-gray-500">
@@ -145,7 +145,7 @@ export const DashboardView = memo(function DashboardView() {
                       </div>
                       <Badge
                         variant="outline"
-                        className={`${lesson.completed ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                        className={`mt-2 w-fit ${lesson.completed ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
                       >
                         {lesson.completed ? "Completed" : "Pending"}
                       </Badge>
@@ -173,10 +173,10 @@ export const DashboardView = memo(function DashboardView() {
           </CardHeader>
           <CardContent>
             {upcomingAssignments.length > 0 ? (
-              <div className="space-y-3">
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {upcomingAssignments.map((assignment) => (
                   <div key={assignment.id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col h-full justify-between">
                       <div>
                         <div className="font-medium text-[#5e8b7e]">{assignment.title}</div>
                         <div className="text-sm text-gray-500">
@@ -188,7 +188,7 @@ export const DashboardView = memo(function DashboardView() {
                       </div>
                       <Badge
                         variant="outline"
-                        className={`${assignment.status === "Graded" ? "bg-green-50 text-green-700 border-green-200" : assignment.status === "Submitted" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                        className={`mt-2 w-fit ${assignment.status === "Graded" ? "bg-green-50 text-green-700 border-green-200" : assignment.status === "Submitted" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
                       >
                         {assignment.status}
                       </Badge>
@@ -215,7 +215,7 @@ export const DashboardView = memo(function DashboardView() {
             <p className="text-sm text-[#5e8b7e]/70">Weekly progress and stats</p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="grid sm:grid-cols-2 gap-6">
               {/* Weekly Lesson Progress */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -228,9 +228,21 @@ export const DashboardView = memo(function DashboardView() {
                 <p className="text-sm text-gray-500">{weeklyProgress.percentage}% of lessons completed</p>
               </div>
 
+              {/* Additional stats */}
+              <div className="grid grid-cols-2 gap-4 h-fit">
+                <div className="bg-gray-50 p-3 rounded-md text-center">
+                  <div className="text-2xl font-semibold text-[#5e8b7e]">{todaysLessons.length}</div>
+                  <div className="text-xs text-gray-500">Today's Lessons</div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-md text-center">
+                  <div className="text-2xl font-semibold text-[#5e8b7e]">{upcomingAssignments.length}</div>
+                  <div className="text-xs text-gray-500">Due Soon</div>
+                </div>
+              </div>
+
               {/* GPA if available */}
               {gpaData && (
-                <div className="pt-4 border-t border-gray-100">
+                <div className="pt-4 border-t border-gray-100 sm:col-span-2">
                   <div className="flex justify-between items-center">
                     <h3 className="font-medium text-[#5e8b7e]">Current GPA</h3>
                     <span className="text-xl font-semibold text-[#5e8b7e]">{gpaData.gpa}</span>
@@ -240,20 +252,6 @@ export const DashboardView = memo(function DashboardView() {
                   </p>
                 </div>
               )}
-
-              {/* Additional stats */}
-              <div className="pt-4 border-t border-gray-100">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-3 rounded-md text-center">
-                    <div className="text-2xl font-semibold text-[#5e8b7e]">{todaysLessons.length}</div>
-                    <div className="text-xs text-gray-500">Today's Lessons</div>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-md text-center">
-                    <div className="text-2xl font-semibold text-[#5e8b7e]">{upcomingAssignments.length}</div>
-                    <div className="text-xs text-gray-500">Due Soon</div>
-                  </div>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
