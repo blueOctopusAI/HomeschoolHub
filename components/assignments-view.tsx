@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CreateAssignmentModal } from "./create-assignment-modal"
 import { UpdateAssignmentModal } from "./update-assignment-modal"
 import { useStore, type Assignment, type Student, type Course } from "@/lib/store"
+import { deleteAssignment } from "@/app/assignments/actions"
 
 // Define prop types for AssignmentsView
 interface AssignmentsViewProps {
@@ -22,9 +23,8 @@ interface AssignmentsViewProps {
 }
 
 export function AssignmentsView({ initialAssignments, userStudents, userCourses }: AssignmentsViewProps) {
-  // Get selected student and deleteAssignment action from Zustand store
+  // Get selected student from Zustand store
   const selectedStudent = useStore((state) => state.selectedStudent)
-  const deleteAssignment = useStore((state) => state.deleteAssignment)
   
   // Use the props instead of Zustand store for assignments, students, and courses
   const assignments = initialAssignments
@@ -98,15 +98,6 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
   const handleEditAssignment = (assignment: Assignment) => {
     setEditingAssignment(assignment)
     setIsUpdateModalOpen(true)
-  }
-
-  // Handle delete assignment
-  const handleDeleteAssignment = (assignmentId: string) => {
-    if (confirm("Are you sure you want to delete this assignment?")) {
-      deleteAssignment(assignmentId)
-      // Note: This will update the Zustand store but not the prop-driven list
-      // This will be addressed in a subsequent task (2.5)
-    }
   }
 
   // Get student names for display
@@ -279,24 +270,34 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
                       </TableCell>
 
                       <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditAssignment(assignment)}
-                            className="h-8 w-8 p-0 text-[#5e8b7e]"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteAssignment(assignment.id)}
-                            className="h-8 w-8 p-0 text-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditAssignment(assignment)}
+                              className="h-8 w-8 p-0 text-[#5e8b7e]"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <form
+                              onSubmit={e => {
+                                if (!confirm("Are you sure you want to delete this assignment?")) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              action={deleteAssignment}
+                            >
+                              <input type="hidden" name="assignmentId" value={assignment.id} />
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </form>
+                          </div>
                       </TableCell>
                     </TableRow>
                   ))}

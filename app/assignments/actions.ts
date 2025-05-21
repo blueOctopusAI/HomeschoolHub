@@ -350,3 +350,69 @@ export async function updateAssignment(
     }
   }
 }
+
+/**
+ * Deletes an existing assignment from the database
+ */
+export async function deleteAssignment(formData: FormData): Promise<ActionResult> {
+  try {
+    if (!formData) {
+      return {
+        success: false,
+        message: "No form data provided."
+      }
+    }
+    
+    // Create Supabase client
+    const supabase = await createSupabaseServerActionClient()
+    
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // Check if user is authenticated
+    if (!user) {
+      return {
+        success: false,
+        message: "User not authenticated."
+      }
+    }
+    
+    // Extract assignment ID
+    const assignmentId = formData.get('assignmentId')?.toString()
+    if (!assignmentId) {
+      return {
+        success: false,
+        message: "Assignment ID is required."
+      }
+    }
+    
+    // Delete the assignment (related assignment_students will be deleted via ON DELETE CASCADE)
+    const { error } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('id', assignmentId)
+      .eq('user_id', user.id)
+    
+    if (error) {
+      console.error("Error deleting assignment:", error)
+      return {
+        success: false,
+        message: error.message || "Failed to delete assignment."
+      }
+    }
+    
+    // Revalidate the assignments page
+    revalidatePath('/assignments')
+    
+    return {
+      success: true,
+      message: "Assignment deleted successfully."
+    }
+  } catch (error) {
+    console.error("Assignment deletion error:", error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "An unexpected error occurred."
+    }
+  }
+}
