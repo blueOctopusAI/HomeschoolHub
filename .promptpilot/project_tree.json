@@ -89,6 +89,20 @@
         "title": "calendar",
         "children": [
           {
+            "key": "app/calendar/actions.ts",
+            "title": "actions.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          },
+          {
+            "key": "app/calendar/add-lessons.ts",
+            "title": "add-lessons.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          },
+          {
             "key": "app/calendar/page.tsx",
             "title": "page.tsx",
             "children": [],
@@ -646,6 +660,13 @@
       {
         "key": "components/add-course-modal.tsx",
         "title": "add-course-modal.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/add-sample-lessons-button.tsx",
+        "title": "add-sample-lessons-button.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"

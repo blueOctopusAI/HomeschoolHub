@@ -18,12 +18,19 @@ const logoColors = {
   friday: { bg: "bg-[#f0e6f5]", border: "border-[#e5d0f0]", text: "text-[#8a5aad]" },
 }
 
-export function CalendarView() {
+export interface CalendarViewProps {
+  initialLessons: Lesson[]
+  userStudents: Student[]
+}
+
+export function CalendarView({ initialLessons = [], userStudents = [] }: CalendarViewProps) {
   // Get data from Zustand store
   const currentDate = useStore((state) => state.currentDate)
   const selectedStudent = useStore((state) => state.selectedStudent)
-  const students = useStore((state) => state.students)
-  const lessons = useStore((state) => state.lessons)
+  
+  // Use props data instead of Zustand store
+  const students = userStudents
+  const lessons = initialLessons
 
   // Local state for modal
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -269,6 +276,7 @@ export function CalendarView() {
         onClose={handleModalClose}
         selectedDate={selectedDate}
         editingLesson={editingLesson}
+        students={students}
       />
     </div>
   )

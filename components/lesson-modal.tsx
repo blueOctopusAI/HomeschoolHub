@@ -18,11 +18,11 @@ interface LessonModalProps {
   onClose: () => void
   selectedDate: Date | null
   editingLesson: Lesson | null
+  students: Student[]
 }
 
-export function LessonModal({ isOpen, onClose, selectedDate, editingLesson }: LessonModalProps) {
-  // Get data and actions from Zustand store
-  const students = useStore((state) => state.students)
+export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, students }: LessonModalProps) {
+  // Get actions from Zustand store (but not data)
   const addLesson = useStore((state) => state.addLesson)
   const updateLesson = useStore((state) => state.updateLesson)
 

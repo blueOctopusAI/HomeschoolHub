@@ -25,16 +25,23 @@ const logoColors = {
   friday: { bg: "bg-[#f0e6f5]", border: "border-[#e5d0f0]", text: "text-[#8a5aad]" },
 }
 
-export function WeeklyCalendar() {
-  // Get data and actions from store using individual selectors for consistency
-  const students = useStore((state) => state.students)
-  const lessons = useStore((state) => state.lessons)
+export interface WeeklyCalendarProps {
+  initialLessons: Lesson[]
+  userStudents: Student[]
+}
+
+export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: WeeklyCalendarProps) {
+  // Get actions and selected data from store using individual selectors
   const selectedStudent = useStore((state) => state.selectedStudent)
   const currentDate = useStore((state) => state.currentDate)
   const addLesson = useStore((state) => state.addLesson)
   const updateLesson = useStore((state) => state.updateLesson)
   const deleteLesson = useStore((state) => state.deleteLesson)
   const toggleLessonComplete = useStore((state) => state.toggleLessonComplete)
+  
+  // Use props data instead of Zustand store
+  const students = userStudents
+  const lessons = initialLessons
 
   // Local state for modal
   const [isModalOpen, setIsModalOpen] = useState(false)
