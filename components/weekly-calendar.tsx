@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Plus } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useStore, type Lesson, type Student } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
+import { createLesson, updateLesson, deleteLesson } from "@/app/calendar/lessons-actions" 
+import { useActionState } from "react"
+import { useRouter } from "next/navigation"
 
 // Colors from the flower logo
 const logoColors = {
@@ -47,6 +50,25 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
+  
+  // Use action state for lesson actions
+  const [createState, createAction] = useActionState(createLesson, undefined)
+  const [updateState, updateAction] = useActionState(updateLesson, undefined)
+  const [deleteState, deleteAction] = useActionState(deleteLesson, undefined)
+  
+  // Get the active state and action based on whether we're editing or creating
+  const state = editingLesson ? updateState : createState
+  
+  // Effect to close modal on successful action
+  useEffect(() => {
+    if (state?.success || deleteState?.success) {
+      setIsModalOpen(false)
+      router.refresh()
+    }
+  }, [state?.success, deleteState?.success, router])
 
   // Form state
   const [formData, setFormData] = useState({
@@ -148,55 +170,68 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
     (e: React.MouseEvent<HTMLButtonElement>, lessonId: string) => {
       e.stopPropagation() // Prevent opening edit modal
       if (confirm("Are you sure you want to delete this lesson?")) {
-        deleteLesson(lessonId)
+        setIsSubmitting(true)
+        const formDataObj = new FormData()
+        formDataObj.set('lessonId', lessonId)
+        
+        deleteAction(formDataObj).finally(() => {
+          setIsSubmitting(false)
+        })
       }
     },
-    [deleteLesson]
+    [deleteAction]
   )
 
   // Handle form submission
-  const handleSubmit = useCallback(() => {
-    if (!selectedDay || !formData.subjectName) return
+  const handleSubmit = useCallback((e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    setIsSubmitting(true)
 
-    const startDate = new Date(selectedDay)
-    const [startHours, startMinutes] = formData.startTime.split(":").map(Number)
-    startDate.setHours(startHours, startMinutes, 0, 0)
-
-    const endDate = new Date(selectedDay)
-    const [endHours, endMinutes] = formData.endTime.split(":").map(Number)
-    endDate.setHours(endHours, endMinutes, 0, 0)
-
-    const lessonData = {
-      subjectId: formData.subjectId || `subject-${formData.subjectName.toLowerCase().replace(/\s+/g, '-')}`,
-      subjectName: formData.subjectName,
-      subjectColor: formData.subjectColor || getSubjectColor(formData.subjectName).text.replace("text", "#"),
-      description: formData.description,
-      studentIds: formData.studentIds.length > 0 ? formData.studentIds : [students[0].id],
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      duration: Math.round((endDate.getTime() - startDate.getTime()) / 60000),
-      completed: editingLesson ? editingLesson.completed : false,
-      materialsNeeded: formData.materialsNeeded,
-      location: formData.location,
-      objectives: formData.objectives,
-      day_of_week: format(selectedDay, "EEEE"),
+    if (!selectedDay || !formData.subjectName) {
+      setIsSubmitting(false)
+      return
     }
 
-    if (editingLesson) {
-      updateLesson(editingLesson.id, lessonData)
-    } else {
-      // Remove any undefined fields when creating a new lesson
-      Object.keys(lessonData).forEach((key) => {
-        if (lessonData[key as keyof typeof lessonData] === undefined) {
-          delete lessonData[key as keyof typeof lessonData]
-        }
-      })
+    try {
+      // Prepare form data
+      const formDataObj = new FormData()
       
-      addLesson(lessonData)
-    }
+      // Prepare dates
+      const startDate = new Date(selectedDay)
+      const [startHours, startMinutes] = formData.startTime.split(":").map(Number)
+      startDate.setHours(startHours, startMinutes, 0, 0)
 
-    setIsModalOpen(false)
-  }, [selectedDay, formData, editingLesson, students, addLesson, updateLesson])
+      const endDate = new Date(selectedDay)
+      const [endHours, endMinutes] = formData.endTime.split(":").map(Number)
+      endDate.setHours(endHours, endMinutes, 0, 0)
+      
+      // Set form data fields
+      if (editingLesson?.id) {
+        formDataObj.set('lessonId', editingLesson.id)
+      }
+      
+      formDataObj.set('subjectName', formData.subjectName)
+      formDataObj.set('subjectColor', formData.subjectColor || getSubjectColor(formData.subjectName).text.replace("text", "#"))
+      formDataObj.set('startDate', startDate.toISOString())
+      formDataObj.set('endDate', endDate.toISOString())
+      formDataObj.set('studentIds', formData.studentIds.join(','))
+      formDataObj.set('dayOfWeek', format(selectedDay, "EEEE"))
+      formDataObj.set('description', formData.description || '')
+      formDataObj.set('objectives', formData.objectives || '')
+      formDataObj.set('materialsNeeded', formData.materialsNeeded || '')
+      formDataObj.set('location', formData.location || '')
+      
+      // Call the appropriate action
+      const action = editingLesson ? updateAction : createAction
+      action(formDataObj).finally(() => {
+        setIsSubmitting(false)
+        // Modal will be closed via useEffect watching state.success
+      })
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      setIsSubmitting(false)
+    }
+  }, [selectedDay, formData, editingLesson, createAction, updateAction, getSubjectColor])
 
   // Get lessons for a specific day - memoize this function
   const getLessonsForDay = useCallback(
@@ -390,16 +425,44 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
             <DialogTitle className="text-[#5e8b7e]">{editingLesson ? "Edit Lesson" : "Add New Lesson"}</DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          {state?.message && (
+            <div className={`p-3 rounded-md text-sm mb-4 ${state?.success ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+              {state.message}
+            </div>
+          )}
+
+          <form
+            ref={formRef}
+            action={editingLesson ? updateAction : createAction}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+            className="grid gap-4 py-4"
+          >
+            {/* Hidden fields for IDs */}
+            {editingLesson?.id && (
+              <input type="hidden" name="lessonId" value={editingLesson.id} />
+            )}
+            <input 
+              type="hidden" 
+              name="studentIds" 
+              value={formData.studentIds.join(',')} 
+            />
+
             <div className="grid gap-2">
               <Label htmlFor="subjectName" className="text-[#5e8b7e]">
-                Subject
+                Subject <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.subjectName}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, subjectName: value }))}
+                name="subjectName"
               >
-                <SelectTrigger id="subjectName" className="border-[#5e8b7e]/20 bg-white">
+                <SelectTrigger 
+                  id="subjectName" 
+                  className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.subjectName ? 'border-red-500' : ''}`}
+                >
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -411,6 +474,16 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
+              {state?.errors?.subjectName && (
+                <p className="text-red-500 text-xs mt-1">{state.errors.subjectName[0]}</p>
+              )}
+              
+              {/* Hidden subjectColor field */}
+              <input 
+                type="hidden" 
+                name="subjectColor" 
+                value={formData.subjectColor || getSubjectColor(formData.subjectName)?.text?.replace("text", "#") || '#5e8b7e'} 
+              />
             </div>
 
             <div className="grid gap-2">
@@ -423,8 +496,11 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Brief description of the lesson"
-                className="border-[#5e8b7e]/20 bg-white"
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.description ? 'border-red-500' : ''}`}
               />
+              {state?.errors?.description && (
+                <p className="text-red-500 text-xs mt-1">{state.errors.description[0]}</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -437,13 +513,18 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                 value={formData.objectives}
                 onChange={handleInputChange}
                 placeholder="Learning objectives for this lesson"
-                className="border-[#5e8b7e]/20 bg-white"
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.objectives ? 'border-red-500' : ''}`}
               />
+              {state?.errors?.objectives && (
+                <p className="text-red-500 text-xs mt-1">{state.errors.objectives[0]}</p>
+              )}
             </div>
 
             <div className="grid gap-2">
-              <Label className="text-[#5e8b7e]">Students</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <Label className="text-[#5e8b7e]">
+                Students <span className="text-red-500">*</span>
+              </Label>
+              <div className={`grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 rounded-md ${state?.errors?.studentIds ? 'border border-red-500' : 'border border-[#5e8b7e]/20'}`}>
                 {students
                   .filter((student) => student.id !== "all")
                   .map((student) => (
@@ -459,12 +540,15 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                     </div>
                   ))}
               </div>
+              {state?.errors?.studentIds && (
+                <p className="text-red-500 text-xs mt-1">{state.errors.studentIds[0]}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="startTime" className="text-[#5e8b7e]">
-                  Start Time
+                  Start Time <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="startTime"
@@ -472,12 +556,29 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                   type="time"
                   value={formData.startTime}
                   onChange={handleInputChange}
-                  className="border-[#5e8b7e]/20 bg-white"
+                  className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.startDate ? 'border-red-500' : ''}`}
                 />
+                {state?.errors?.startDate && (
+                  <p className="text-red-500 text-xs mt-1">{state.errors.startDate[0]}</p>
+                )}
+                
+                {/* Hidden field for the actual startDate that will be sent to the server */}
+                {selectedDay && (
+                  <input 
+                    type="hidden" 
+                    name="startDate" 
+                    value={(() => {
+                      const date = new Date(selectedDay);
+                      const [hours, minutes] = formData.startTime.split(':').map(Number);
+                      date.setHours(hours, minutes, 0, 0);
+                      return date.toISOString();
+                    })()} 
+                  />
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="endTime" className="text-[#5e8b7e]">
-                  End Time
+                  End Time <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="endTime"
@@ -485,8 +586,25 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                   type="time"
                   value={formData.endTime}
                   onChange={handleInputChange}
-                  className="border-[#5e8b7e]/20 bg-white"
+                  className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.endDate ? 'border-red-500' : ''}`}
                 />
+                {state?.errors?.endDate && (
+                  <p className="text-red-500 text-xs mt-1">{state.errors.endDate[0]}</p>
+                )}
+                
+                {/* Hidden field for the actual endDate that will be sent to the server */}
+                {selectedDay && (
+                  <input 
+                    type="hidden" 
+                    name="endDate" 
+                    value={(() => {
+                      const date = new Date(selectedDay);
+                      const [hours, minutes] = formData.endTime.split(':').map(Number);
+                      date.setHours(hours, minutes, 0, 0);
+                      return date.toISOString();
+                    })()} 
+                  />
+                )}
               </div>
             </div>
 
@@ -500,8 +618,11 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                 value={formData.materialsNeeded}
                 onChange={handleInputChange}
                 placeholder="List of materials needed for the lesson"
-                className="border-[#5e8b7e]/20 bg-white"
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.materialsNeeded ? 'border-red-500' : ''}`}
               />
+              {state?.errors?.materialsNeeded && (
+                <p className="text-red-500 text-xs mt-1">{state.errors.materialsNeeded[0]}</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -514,10 +635,22 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                 value={formData.location}
                 onChange={handleInputChange}
                 placeholder="e.g., Living room, Kitchen"
-                className="border-[#5e8b7e]/20 bg-white"
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.location ? 'border-red-500' : ''}`}
               />
+              {state?.errors?.location && (
+                <p className="text-red-500 text-xs mt-1">{state.errors.location[0]}</p>
+              )}
             </div>
-          </div>
+            
+            {/* Hidden dayOfWeek field */}
+            {selectedDay && (
+              <input 
+                type="hidden" 
+                name="dayOfWeek" 
+                value={format(selectedDay, "EEEE")} 
+              />
+            )}
+          </form>
 
           <DialogFooter>
             {editingLesson && (
@@ -525,6 +658,7 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                 variant="outline"
                 onClick={(e) => handleDeleteLesson(e, editingLesson.id)}
                 className="mr-auto border-red-300 text-red-500 hover:bg-red-50"
+                disabled={isSubmitting}
               >
                 Delete
               </Button>
@@ -533,11 +667,23 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
               variant="outline"
               onClick={() => setIsModalOpen(false)}
               className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] hover:text-[#4a6e63]"
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
-              {editingLesson ? "Update" : "Add"} Lesson
+            <Button 
+              onClick={handleSubmit} 
+              className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {editingLesson ? "Updating..." : "Adding..."}
+                </>
+              ) : (
+                `${editingLesson ? "Update" : "Add"} Lesson`
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

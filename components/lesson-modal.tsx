@@ -15,6 +15,7 @@ import { type Lesson, type Student } from "@/lib/store"
 import { format } from "date-fns"
 import { createLesson, updateLesson } from "@/app/calendar/lessons-actions"
 import { useRouter } from "next/navigation"
+import { useActionState } from "react"
 
 interface LessonModalProps {
   isOpen: boolean
@@ -27,10 +28,17 @@ interface LessonModalProps {
 export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, students }: LessonModalProps) {
   // Setup state
   const [isPending, startTransition] = useTransition()
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [validationErrors, setValidationErrors] = useState<Record<string, string[] | undefined>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
+  
+  // Use useActionState for server actions
+  const [createState, createAction] = useActionState(createLesson, undefined)
+  const [updateState, updateAction] = useActionState(updateLesson, undefined)
+  
+  // Determine the current state and action based on whether we're editing or creating
+  const state = editingLesson ? updateState : createState
+  const formAction = editingLesson ? updateAction : createAction
 
   // Default lesson state - memoize this to prevent recreation on each render
   const defaultLesson = useMemo(
@@ -62,10 +70,6 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
   useEffect(() => {
     if (!isOpen) return // Skip effect if modal is closed
 
-    // Reset any error states when modal opens
-    setErrorMessage(null)
-    setValidationErrors({})
-
     if (editingLesson) {
       setLesson(editingLesson)
     } else if (selectedDate) {
@@ -85,35 +89,25 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
       setLesson(defaultLesson)
     }
   }, [editingLesson, selectedDate, isOpen, defaultLesson])
+  
+  // Effect to close modal on successful action
+  useEffect(() => {
+    if (state?.success) {
+      onClose()
+      router.refresh()
+    }
+  }, [state?.success, onClose, router])
 
   // Handle input changes - use useCallback to prevent recreation on each render
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setLesson((prev) => ({ ...prev, [name]: value }))
-    
-    // Clear validation error for this field if it exists
-    if (validationErrors[name]) {
-      setValidationErrors(prev => {
-        const updated = { ...prev }
-        delete updated[name]
-        return updated
-      })
-    }
-  }, [validationErrors])
+  }, [])
 
   // Handle select changes - use useCallback to prevent recreation on each render
   const handleSelectChange = useCallback((name: string, value: any) => {
     setLesson((prev) => ({ ...prev, [name]: value }))
-    
-    // Clear validation error for this field if it exists
-    if (validationErrors[name]) {
-      setValidationErrors(prev => {
-        const updated = { ...prev }
-        delete updated[name]
-        return updated
-      })
-    }
-  }, [validationErrors])
+  }, [])
 
   // Handle student selection - use useCallback to prevent recreation on each render
   const handleStudentSelection = useCallback((studentId: string, checked: boolean) => {
@@ -122,21 +116,12 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
         ? [...prev.studentIds, studentId]
         : prev.studentIds.filter(id => id !== studentId);
         
-      // Clear studentIds validation error if we now have students selected
-      if (newStudentIds.length > 0 && validationErrors.studentIds) {
-        setValidationErrors(prev => {
-          const updated = { ...prev }
-          delete updated.studentIds
-          return updated
-        })
-      }
-      
       return { 
         ...prev, 
         studentIds: newStudentIds 
       }
     })
-  }, [validationErrors])
+  }, [])
 
   // Handle time changes - use useCallback to prevent recreation on each render
   const handleTimeChange = useCallback((timeString: string, field: "startTime" | "endTime") => {
@@ -152,16 +137,6 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
         const currentEnd = new Date(prev.endDate)
         const duration = currentEnd.getTime() - currentStart.getTime()
         const newEnd = new Date(newStart.getTime() + duration)
-        
-        // Clear validation errors for these fields
-        if (validationErrors.startDate || validationErrors.endDate) {
-          setValidationErrors(prev => {
-            const updated = { ...prev }
-            delete updated.startDate
-            delete updated.endDate
-            return updated
-          })
-        }
 
         return {
           ...prev,
@@ -172,22 +147,13 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
         const newEnd = new Date(prev.endDate)
         newEnd.setHours(hours, minutes, 0, 0)
         
-        // Clear validation error for endDate if it exists
-        if (validationErrors.endDate) {
-          setValidationErrors(prev => {
-            const updated = { ...prev }
-            delete updated.endDate
-            return updated
-          })
-        }
-
         return {
           ...prev,
           endDate: newEnd.toISOString(),
         }
       }
     })
-  }, [validationErrors])
+  }, [])
 
   // Format time for input - use useCallback to prevent recreation on each render
   const formatTimeForInput = useCallback((dateString: string) => {
@@ -195,108 +161,45 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
     return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`
   }, [])
 
-  // Validate form before submission
-  const validateForm = useCallback(() => {
-    const errors: Record<string, string[]> = {}
-    
-    // Check required fields
-    if (!lesson.subjectName) {
-      errors.subjectName = ["Subject is required"]
-    }
-    
-    if (lesson.studentIds.length === 0) {
-      errors.studentIds = ["At least one student must be selected"]
-    }
-    
-    // Check time validity
-    const startDate = new Date(lesson.startDate)
-    const endDate = new Date(lesson.endDate)
-    
-    if (isNaN(startDate.getTime())) {
-      errors.startDate = ["Invalid start time"]
-    }
-    
-    if (isNaN(endDate.getTime())) {
-      errors.endDate = ["Invalid end time"]
-    } else if (endDate <= startDate) {
-      errors.endDate = ["End time must be after start time"]
-    }
-    
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
-  }, [lesson])
-
   // Handle form submission
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
     
-    // Validate the form first
-    if (!validateForm()) {
-      setErrorMessage("Please correct the errors below.")
-      return
-    }
-    
-    setErrorMessage(null)
-    startTransition(async () => {
-      try {
-        const formData = new FormData(formRef.current || undefined)
-        
-        // Debug: Log all form data
-        console.log("Form data being submitted:", {
-          lessonId: editingLesson?.id,
-          subjectName: lesson.subjectName,
-          subjectColor: lesson.subjectColor,
-          startDate: lesson.startDate,
-          endDate: lesson.endDate,
-          studentIds: lesson.studentIds.join(','),
-          day: lesson.day_of_week,
-          description: lesson.description,
-          objectives: lesson.objectives,
-          materialsNeeded: lesson.materialsNeeded,
-          location: lesson.location
-        })
-        
-        // Manually add the required fields to the form data to ensure they're included correctly
-        if (editingLesson?.id) {
-          formData.set('lessonId', editingLesson.id)
-        }
-        // Properly format the day of week
-        const startDateObj = new Date(lesson.startDate)
-        const dayOfWeek = startDateObj.toLocaleDateString('en-US', { weekday: 'long' })
-        
-        formData.set('studentIds', lesson.studentIds.join(','))
-        formData.set('startDate', lesson.startDate)
-        formData.set('endDate', lesson.endDate)
-        formData.set('dayOfWeek', dayOfWeek)
-        formData.set('subjectName', lesson.subjectName || '')
-        formData.set('description', lesson.description || '')
-        formData.set('objectives', lesson.objectives || '')
-        formData.set('materialsNeeded', lesson.materialsNeeded || '')
-        formData.set('location', lesson.location || '')
-        formData.set('subjectColor', lesson.subjectColor || '#5e8b7e')
-        
-        // Call the appropriate server action
-        const result = editingLesson 
-          ? await updateLesson(undefined, formData)
-          : await createLesson(undefined, formData)
-        
-        if (result.success) {
-          onClose()
-          router.refresh()
-        } else {
-          setErrorMessage(result.message || "Failed to save lesson.")
-          
-          // Set validation errors if they exist in the result
-          if (result.errors) {
-            setValidationErrors(result.errors)
-          }
-        }
-      } catch (error) {
-        console.error("Error saving lesson:", error)
-        setErrorMessage("An unexpected error occurred. Please try again.")
+    try {
+      // Prepare the form data
+      const formData = new FormData(formRef.current || undefined)
+      
+      // Manually add the required fields to the form data to ensure they're included correctly
+      if (editingLesson?.id) {
+        formData.set('lessonId', editingLesson.id)
       }
-    })
-  }, [lesson, editingLesson, onClose, router, validateForm])
+      
+      // Properly format the day of week
+      const startDateObj = new Date(lesson.startDate)
+      const dayOfWeek = startDateObj.toLocaleDateString('en-US', { weekday: 'long' })
+      
+      formData.set('studentIds', lesson.studentIds.join(','))
+      formData.set('startDate', lesson.startDate)
+      formData.set('endDate', lesson.endDate)
+      formData.set('dayOfWeek', dayOfWeek)
+      formData.set('subjectName', lesson.subjectName || '')
+      formData.set('description', lesson.description || '')
+      formData.set('objectives', lesson.objectives || '')
+      formData.set('materialsNeeded', lesson.materialsNeeded || '')
+      formData.set('location', lesson.location || '')
+      formData.set('subjectColor', lesson.subjectColor || '#5e8b7e')
+      
+      // Call the appropriate action
+      const action = editingLesson ? updateAction : createAction
+      action(formData).finally(() => {
+        setIsSubmitting(false)
+      })
+    } catch (error) {
+      console.error("Error preparing form data:", error)
+      setIsSubmitting(false)
+    }
+  }, [lesson, editingLesson, createAction, updateAction])
 
   // Subject options - memoize this array
   const subjectOptions = useMemo(
@@ -330,12 +233,15 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
           </DialogTitle>
         </DialogHeader>
 
-        {errorMessage && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">{errorMessage}</div>
+        {state?.message && (
+          <div className={`p-3 rounded-md text-sm mb-4 ${state?.success ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {state.message}
+          </div>
         )}
 
         <form 
           ref={formRef}
+          action={formAction}
           onSubmit={handleSubmit}
           className="grid gap-4 py-4"
         >
@@ -356,7 +262,7 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
             >
               <SelectTrigger 
                 id="subjectName" 
-                className={`border-[#5e8b7e]/20 bg-white ${validationErrors.subjectName ? "border-red-500" : ""}`}
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.subjectName ? "border-red-500" : ""}`}
               >
                 <SelectValue placeholder="Select subject" />
               </SelectTrigger>
@@ -368,8 +274,8 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
                 ))}
               </SelectContent>
             </Select>
-            {validationErrors.subjectName && (
-              <p className="text-red-500 text-xs">{validationErrors.subjectName[0]}</p>
+            {state?.errors?.subjectName && (
+              <p className="text-red-500 text-xs">{state.errors.subjectName[0]}</p>
             )}
           </div>
 
@@ -396,9 +302,7 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
             <Label className="text-[#5e8b7e] flex items-center">
               Students <span className="text-red-500 ml-1">*</span>
             </Label>
-            <div className={`grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 rounded-md ${
-              validationErrors.studentIds ? "border border-red-500" : "border border-[#5e8b7e]/20"
-            }`}>
+            <div className={`grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 rounded-md ${state?.errors?.studentIds ? "border border-red-500" : "border border-[#5e8b7e]/20"}`}>
               {availableStudents.map((student) => (
                 <div key={student.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -412,8 +316,8 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
                 </div>
               ))}
             </div>
-            {validationErrors.studentIds && (
-              <p className="text-red-500 text-xs">{validationErrors.studentIds[0]}</p>
+            {state?.errors?.studentIds && (
+              <p className="text-red-500 text-xs">{state.errors.studentIds[0]}</p>
             )}
           </div>
 
@@ -428,10 +332,10 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
                 type="time"
                 value={formatTimeForInput(lesson.startDate)}
                 onChange={(e) => handleTimeChange(e.target.value, "startTime")}
-                className={`border-[#5e8b7e]/20 bg-white ${validationErrors.startDate ? "border-red-500" : ""}`}
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.startDate ? "border-red-500" : ""}`}
               />
-              {validationErrors.startDate && (
-                <p className="text-red-500 text-xs">{validationErrors.startDate[0]}</p>
+              {state?.errors?.startDate && (
+                <p className="text-red-500 text-xs">{state.errors.startDate[0]}</p>
               )}
             </div>
             <div className="grid gap-2">
@@ -443,10 +347,10 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
                 type="time"
                 value={formatTimeForInput(lesson.endDate)}
                 onChange={(e) => handleTimeChange(e.target.value, "endTime")}
-                className={`border-[#5e8b7e]/20 bg-white ${validationErrors.endDate ? "border-red-500" : ""}`}
+                className={`border-[#5e8b7e]/20 bg-white ${state?.errors?.endDate ? "border-red-500" : ""}`}
               />
-              {validationErrors.endDate && (
-                <p className="text-red-500 text-xs">{validationErrors.endDate[0]}</p>
+              {state?.errors?.endDate && (
+                <p className="text-red-500 text-xs">{state.errors.endDate[0]}</p>
               )}
             </div>
           </div>
@@ -502,16 +406,16 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
               variant="outline"
               onClick={onClose}
               className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] hover:text-[#5e8b7e]"
-              disabled={isPending}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               type="submit" 
               className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
-              disabled={isPending}
+              disabled={isSubmitting}
             >
-              {isPending ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {editingLesson ? "Updating..." : "Adding..."}

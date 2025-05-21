@@ -84,6 +84,19 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
     })
   }
 
+  // Add onSubmit handler to manage isSubmitting state
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    
+    formAction(formData).finally(() => {
+      setIsSubmitting(false);
+    });
+  };
+
   if (!assignment) return null
 
   // Extract field errors
@@ -97,20 +110,15 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
           <DialogDescription>Update the assignment details.</DialogDescription>
         </DialogHeader>
 
-        {state.message && !state.success && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">{state.message}</div>
+        {state.message && (
+          <div className={`p-3 rounded-md text-sm mb-4 ${state.success ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {state.message}
+          </div>
         )}
 
         <form 
-          action={async (formData) => {
-            setIsSubmitting(true);
-            try {
-              await formAction(formData);
-            } finally {
-              // State.success effect will handle closing if successful
-              setIsSubmitting(false);
-            }
-          }} 
+          action={formAction}
+          onSubmit={handleSubmit}
           className="space-y-4">
           {/* Hidden assignment ID field */}
           <input type="hidden" name="assignmentId" value={assignment.id} />
@@ -144,8 +152,11 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter assignment description"
-                className="border-[#5e8b7e]/20 min-h-[100px]"
+                className={cn("border-[#5e8b7e]/20 min-h-[100px]", fieldErrors.description ? "border-red-500" : "")}
               />
+              {fieldErrors.description && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.description[0]}</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -293,7 +304,7 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
                 onValueChange={(value) => setCourseId(value === "none" ? null : value)} 
                 name="courseId"
               >
-                <SelectTrigger id="courseId" className="border-[#5e8b7e]/20">
+                <SelectTrigger id="courseId" className={cn("border-[#5e8b7e]/20", fieldErrors.courseId ? "border-red-500" : "")}>
                   <SelectValue placeholder="Select a course (optional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -305,6 +316,9 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.courseId && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.courseId[0]}</p>
+              )}
             </div>
             
             {/* Hidden date input to pass the formatted date to the server action */}
