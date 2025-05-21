@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns"
 import { useStore, type Lesson, type Student } from "@/lib/store"
 import { Check, Calendar, BookOpen, CheckSquare, CheckCircle } from "lucide-react"
@@ -9,17 +9,43 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { markMultipleLessonsComplete } from "@/app/checklist/actions"
+import { useRouter } from "next/navigation"
+import { toast } from "@/components/ui/use-toast"
 
 export function ChecklistView() {
+  const router = useRouter();
   // Get data from Zustand store
   const lessons = useStore((state) => state.lessons)
   const students = useStore((state) => state.students)
   const selectedStudent = useStore((state) => state.selectedStudent)
   const currentDate = useStore((state) => state.currentDate)
   const toggleLessonComplete = useStore((state) => state.toggleLessonComplete)
+  const markAllLessonsComplete = useStore((state) => state.markAllLessonsComplete)
 
   // Local state
   const [view, setView] = useState<"day" | "week">("day")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [lastSubmitResult, setLastSubmitResult] = useState<{ success: boolean, message: string } | null>(null)
+
+  // Effect to show toast when submit result changes
+  useEffect(() => {
+    if (lastSubmitResult) {
+      if (lastSubmitResult.success) {
+        toast({
+          title: "Success",
+          description: lastSubmitResult.message,
+          variant: "default",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: lastSubmitResult.message,
+          variant: "destructive",
+        })
+      }
+    }
+  }, [lastSubmitResult])
 
   // Get the student name for display
   const studentName = useMemo(() => {
@@ -101,10 +127,41 @@ export function ChecklistView() {
     toggleLessonComplete(lessonId)
   }
 
-  // Handle mark all complete
-  const handleMarkAllComplete = () => {
-    // We'll implement this later or remove it if not needed
-    alert("This feature is not implemented yet")
+  // Handler for both client-side and server-side marking lessons complete
+  const handleMarkAllComplete = async (e: React.FormEvent, periodType: "today" | "week") => {
+    e.preventDefault()
+    
+    if (!confirm(`Mark all ${periodType === "today" ? "today's" : "this week's"} lessons complete?`)) {
+      return
+    }
+    
+    setIsSubmitting(true)
+    
+    try {
+      // Update client-side state immediately for a responsive UI
+      const lessonsToUpdate = periodType === "today" ? todaysLessons : filteredLessons
+      markAllLessonsComplete(lessonsToUpdate.map(lesson => lesson.id))
+      
+      // Then submit the server action
+      const formData = new FormData()
+      formData.append("studentId", selectedStudent)
+      formData.append("currentDateISO", currentDate.toISOString())
+      formData.append("datePeriodType", periodType)
+      
+      const result = await markMultipleLessonsComplete(formData)
+      setLastSubmitResult(result)
+      
+      // Force a refresh to ensure we have the latest data
+      router.refresh()
+    } catch (error) {
+      console.error('Error marking lessons complete:', error)
+      setLastSubmitResult({
+        success: false,
+        message: error instanceof Error ? error.message : "An unexpected error occurred"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Navigate to today
@@ -248,13 +305,15 @@ export function ChecklistView() {
               <CardTitle className="text-lg font-medium text-[#5e8b7e]">Today's Lessons</CardTitle>
               {todaysLessons.length > 0 && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleMarkAllComplete}
                   className="border-[#5e8b7e]/30 text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                  onClick={(e) => handleMarkAllComplete(e, "today")}
+                  disabled={isSubmitting}
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Mark All Complete
+                  {isSubmitting ? "Updating..." : "Mark All Complete"}
                 </Button>
               )}
             </CardHeader>
@@ -280,13 +339,15 @@ export function ChecklistView() {
               <CardTitle className="text-lg font-medium text-[#5e8b7e]">This Week's Lessons</CardTitle>
               {filteredLessons.length > 0 && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleMarkAllComplete}
                   className="border-[#5e8b7e]/30 text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                  onClick={(e) => handleMarkAllComplete(e, "week")}
+                  disabled={isSubmitting}
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Mark All Complete
+                  {isSubmitting ? "Updating..." : "Mark All Complete"}
                 </Button>
               )}
             </CardHeader>

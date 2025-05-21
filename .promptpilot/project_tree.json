@@ -133,6 +133,13 @@
         "title": "checklist",
         "children": [
           {
+            "key": "app/checklist/actions.ts",
+            "title": "actions.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/checklist"
+          },
+          {
             "key": "app/checklist/page.tsx",
             "title": "page.tsx",
             "children": [],

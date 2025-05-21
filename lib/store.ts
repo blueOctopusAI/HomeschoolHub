@@ -92,6 +92,7 @@ type Store = {
   updateLesson: (id: string, updates: Partial<Lesson>) => void
   deleteLesson: (id: string) => void
   toggleLessonComplete: (id: string) => void
+  markAllLessonsComplete: (ids: string[]) => void
   addCourse: (course: Omit<Course, "id">) => void
   updateCourse: (id: string, updates: Partial<Course>) => void
   deleteCourse: (id: string) => void
@@ -364,6 +365,13 @@ export const useStore = create<Store>((set) => ({
   toggleLessonComplete: (id) =>
     set((state) => ({
       lessons: state.lessons.map((lesson) => (lesson.id === id ? { ...lesson, completed: !lesson.completed } : lesson)),
+    })),
+    
+  markAllLessonsComplete: (ids) =>
+    set((state) => ({
+      lessons: state.lessons.map((lesson) =>
+        ids.includes(lesson.id) ? { ...lesson, completed: true } : lesson
+      ),
     })),
 
   // Course actions
