@@ -33,7 +33,7 @@ export type Lesson = {
   materialsNeeded?: string
   location?: string
   completed: boolean
-  day?: string
+  day_of_week?: string
 }
 
 export type Course = {
@@ -139,7 +139,7 @@ const sampleLessons: Lesson[] = [
     objectives: "Master multiplication tables 1-12",
     materialsNeeded: "Workbook, pencils, calculator",
     completed: false,
-    day: "Monday",
+    day_of_week: "Monday",
   },
   {
     id: "lesson2",
@@ -153,7 +153,7 @@ const sampleLessons: Lesson[] = [
     objectives: "Understand the stages of plant growth",
     materialsNeeded: "Seeds, soil, pots, water",
     completed: true,
-    day: "Tuesday",
+    day_of_week: "Tuesday",
   },
   {
     id: "lesson3",
@@ -167,7 +167,7 @@ const sampleLessons: Lesson[] = [
     objectives: "Identify main ideas and supporting details",
     materialsNeeded: "Book, notebook, pencils",
     completed: false,
-    day: "Wednesday",
+    day_of_week: "Wednesday",
   },
   {
     id: "lesson4",
@@ -181,7 +181,7 @@ const sampleLessons: Lesson[] = [
     objectives: "Compare and contrast ancient Egypt and Mesopotamia",
     materialsNeeded: "Textbook, map, timeline",
     completed: true,
-    day: "Thursday",
+    day_of_week: "Thursday",
   },
 ]
 

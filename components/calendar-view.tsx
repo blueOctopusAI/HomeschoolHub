@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useTransition } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Plus } from "lucide-react"
+import { Plus, Edit, Trash2, Check, X, Loader2 } from "lucide-react"
 import { Button } from "./ui/button"
 import { useStore, type Lesson, type Student } from "@/lib/store"
 import { LessonModal } from "./lesson-modal"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
+import { useRouter } from "next/navigation"
+import { deleteLesson, toggleLessonComplete } from "@/app/calendar/lessons-actions"
 
 // Colors from the flower logo
 const logoColors = {
@@ -27,6 +29,9 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
   // Get data from Zustand store
   const currentDate = useStore((state) => state.currentDate)
   const selectedStudent = useStore((state) => state.selectedStudent)
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [pendingLessonId, setPendingLessonId] = useState<string | null>(null)
   
   // Use props data instead of Zustand store
   const students = userStudents
@@ -92,7 +97,12 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
   }, [])
 
   // Handle editing a lesson - use useCallback to prevent recreation on each render
-  const handleEditLesson = useCallback((lesson: Lesson) => {
+  const handleEditLesson = useCallback((lesson: Lesson, event?: React.MouseEvent) => {
+    // If this was triggered by a button click in the actions area, stop propagation
+    if (event) {
+      event.stopPropagation();
+    }
+    
     setEditingLesson(lesson)
     setSelectedDate(parseISO(lesson.startDate))
     setIsModalOpen(true)
@@ -102,6 +112,65 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false)
   }, [])
+
+  // Handle deleting a lesson
+  const handleDeleteLesson = useCallback((lessonId: string, event: React.MouseEvent) => {
+    // Stop propagation to prevent opening the edit modal
+    event.stopPropagation();
+    
+    if (!confirm("Are you sure you want to delete this lesson?")) {
+      return;
+    }
+    
+    setPendingLessonId(lessonId);
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        formData.append('lessonId', lessonId);
+        
+        const result = await deleteLesson(undefined, formData);
+        
+        if (result.success) {
+          router.refresh();
+        } else {
+          console.error("Failed to delete lesson:", result.message);
+          alert("Failed to delete lesson. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error deleting lesson:", error);
+        alert("An unexpected error occurred. Please try again.");
+      } finally {
+        setPendingLessonId(null);
+      }
+    });
+  }, [router]);
+
+  // Handle toggling lesson completion
+  const handleToggleComplete = useCallback((lessonId: string, currentStatus: boolean, event: React.MouseEvent) => {
+    // Stop propagation to prevent opening the edit modal
+    event.stopPropagation();
+    
+    setPendingLessonId(lessonId);
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        formData.append('lessonId', lessonId);
+        formData.append('completed', (!currentStatus).toString());
+        
+        const result = await toggleLessonComplete(undefined, formData);
+        
+        if (result.success) {
+          router.refresh();
+        } else {
+          console.error("Failed to toggle lesson status:", result.message);
+        }
+      } catch (error) {
+        console.error("Error toggling lesson status:", error);
+      } finally {
+        setPendingLessonId(null);
+      }
+    });
+  }, [router]);
 
   // Get subject color based on subject name - memoize this function
   const getSubjectColor = useCallback((subjectName: string) => {
@@ -214,6 +283,7 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                   {dayLessons.map((lesson) => {
                     const startTime = parseISO(lesson.startDate)
                     const endTime = parseISO(lesson.endDate)
+                    const isCurrentlyProcessing = pendingLessonId === lesson.id;
 
                     return (
                       <div
@@ -221,7 +291,57 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                         onClick={() => handleEditLesson(lesson)}
                         className="bg-[#f0f4f2] rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5"
                       >
-                        <div className="font-medium text-[#5e8b7e]">{lesson.subjectName}</div>
+                        <div className="flex justify-between items-start">
+                          <div className="font-medium text-[#5e8b7e] flex-1">
+                            {lesson.subjectName}
+                          </div>
+                          <div className="flex gap-1 mt-0.5">
+                            {/* Toggle complete button */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={`h-6 w-6 p-0 ${lesson.completed ? 'text-green-600' : 'text-gray-400'}`}
+                              onClick={(e) => handleToggleComplete(lesson.id, lesson.completed, e)}
+                              disabled={isPending && isCurrentlyProcessing}
+                            >
+                              {isPending && isCurrentlyProcessing ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
+                            </Button>
+                            
+                            {/* Edit button - explicit edit button for clarity */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                              onClick={(e) => handleEditLesson(lesson, e)}
+                              disabled={isPending && isCurrentlyProcessing}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            
+                            {/* Delete button */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              onClick={(e) => handleDeleteLesson(lesson.id, e)}
+                              disabled={isPending && isCurrentlyProcessing}
+                            >
+                              {isPending && isCurrentlyProcessing ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                          
                         <div className="text-xs text-[#5e8b7e] mt-1">
                           {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
                         </div>

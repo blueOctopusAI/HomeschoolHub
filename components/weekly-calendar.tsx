@@ -179,7 +179,7 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
       materialsNeeded: formData.materialsNeeded,
       location: formData.location,
       objectives: formData.objectives,
-      day: format(selectedDay, "EEEE"),
+      day_of_week: format(selectedDay, "EEEE"),
     }
 
     if (editingLesson) {
@@ -222,12 +222,17 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
   const subjectColors = useMemo(() => ({
     Math: { bg: "bg-blue-50", text: "text-blue-800" },
     Science: { bg: "bg-green-50", text: "text-green-800" },
+    "Language Arts": { bg: "bg-purple-50", text: "text-purple-800" },
     Reading: { bg: "bg-amber-50", text: "text-amber-800" },
     Writing: { bg: "bg-purple-50", text: "text-purple-800" },
     History: { bg: "bg-orange-50", text: "text-orange-800" },
+    Geography: { bg: "bg-yellow-50", text: "text-yellow-800" },
     Art: { bg: "bg-pink-50", text: "text-pink-800" },
     Music: { bg: "bg-indigo-50", text: "text-indigo-800" },
     "Physical Education": { bg: "bg-cyan-50", text: "text-cyan-800" },
+    "Foreign Language": { bg: "bg-lime-50", text: "text-lime-800" },
+    "Computer Science": { bg: "bg-sky-50", text: "text-sky-800" },
+    Other: { bg: "bg-gray-50", text: "text-gray-800" },
   }), [])
 
   // Get subject color - memoize this function

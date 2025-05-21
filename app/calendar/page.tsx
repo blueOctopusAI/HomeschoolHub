@@ -36,6 +36,7 @@ export default async function CalendarPage() {
     
     if (lessonsError) {
       console.error("Error fetching lessons:", lessonsError)
+      return <div>Error loading lessons. Please try again later.</div>
     }
     
     // Fetch user's students
@@ -46,6 +47,7 @@ export default async function CalendarPage() {
     
     if (studentsError) {
       console.error("Error fetching students:", studentsError)
+      return <div>Error loading students. Please try again later.</div>
     }
     
     // Transform lessons data to match the expected Lesson type
@@ -64,7 +66,7 @@ export default async function CalendarPage() {
         startDate: lesson.start_date,
         endDate: lesson.end_date,
         completed: lesson.completed || false,
-        day: lesson.day,
+        day_of_week: lesson.day_of_week,
         duration: lesson.duration,
         location: lesson.location,
         materialsNeeded: lesson.materials_needed,

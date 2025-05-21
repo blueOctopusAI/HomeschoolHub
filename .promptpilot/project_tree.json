@@ -103,6 +103,13 @@
             "parentKey": "app/calendar"
           },
           {
+            "key": "app/calendar/lessons-actions.ts",
+            "title": "lessons-actions.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          },
+          {
             "key": "app/calendar/page.tsx",
             "title": "page.tsx",
             "children": [],
