@@ -36,11 +36,28 @@ const subjectCategories = [
   "Other",
 ]
 
-// Term options
-const termOptions = ["Fall Semester", "Spring Semester", "Full Year"] as const
+// Term options - matches the database enum values
+const termOptions = [
+  "Fall Semester", 
+  "Spring Semester", 
+  "Full Year", 
+  "Summer Session", 
+  "Quarter 1", 
+  "Quarter 2", 
+  "Quarter 3", 
+  "Quarter 4"
+] as const
 
-// Grade options
-const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"]
+// Grade options - matches the database enum values
+const gradeOptions = [
+  "A+", "A", "A-", 
+  "B+", "B", "B-", 
+  "C+", "C", "C-", 
+  "D+", "D", "D-", 
+  "F", "Pass", "Fail", 
+  "In Progress", "Not Graded", 
+  "Exempt", "Audit"
+]
 
 // Academic year options
 const academicYearOptions = ["2022-2023", "2023-2024", "2024-2025", "2025-2026", "2026-2027"]
@@ -68,6 +85,8 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
       setGrade("A")
       setCredits(1.0)
       setAcademicYear("2024-2025")
+      // Reset submission status as well (just in case)
+      setIsSubmitting(false)
     }
   }, [isOpen])
 
@@ -76,19 +95,20 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
     if (state?.success) {
       onOpenChange(false)
       setIsSubmitting(false)
+    } else if (state && !state.success) {
+      // If there was an error, also stop submitting
+      setIsSubmitting(false)
     }
-  }, [state?.success, onOpenChange])
+  }, [state, onOpenChange])
 
   // Handle form submission
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
     try {
       await formAction(formData)
-    } finally {
-      // If there was an error, we'll still need to enable the button again
-      if (!state?.success) {
-        setIsSubmitting(false)
-      }
+    } catch (error) {
+      console.error("Form submission error:", error)
+      setIsSubmitting(false)
     }
   }
 

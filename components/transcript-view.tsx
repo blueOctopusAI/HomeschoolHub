@@ -1,12 +1,14 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Printer, FileDown, Filter } from "lucide-react"
+import { Printer, FileDown, Filter, Plus, RefreshCcw } from "lucide-react"
 import { useStore, type Course, type Student } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AddCourseModal } from "@/components/add-course-modal"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 // GPA calculation helper
 const gradeToPoints = (grade: string): number => {
@@ -29,23 +31,105 @@ const gradeToPoints = (grade: string): number => {
   return gradeMap[grade] || 0
 }
 
+// Database ID mapping for students
+// We need to use these real UUIDs for the Supabase database
+const studentIdMapping: Record<string, string> = {
+  "student1": "bb0c2d70-4553-4c25-95f1-d4dbf38ec202", // Emma Johnson
+  "student2": "9948fed0-2182-43a2-b186-1331b083eecd", // Noah Williams
+  "student3": "57b063a8-fb4e-4421-bc15-7399601c7dc1"  // Olivia Davis
+}
+
+// Reverse mapping for displaying courses from Supabase in UI
+const reverseStudentIdMapping: Record<string, string> = {
+  "bb0c2d70-4553-4c25-95f1-d4dbf38ec202": "student1", // Emma Johnson
+  "9948fed0-2182-43a2-b186-1331b083eecd": "student2", // Noah Williams
+  "57b063a8-fb4e-4421-bc15-7399601c7dc1": "student3"  // Olivia Davis
+}
+
 export function TranscriptView() {
   // Use direct selectors from useStore instead of helper hooks for consistency
   const students = useStore((state) => state.students)
   const selectedStudentId = useStore((state) => state.selectedStudent)
-  const courses = useStore((state) => state.courses)
   const [yearFilter, setYearFilter] = useState<string>("all")
+  
+  // State for controlling the AddCourseModal
+  const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false)
+  
+  // State for courses fetched from Supabase
+  const [databaseCourses, setDatabaseCourses] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  // Map the local selectedStudentId to the real database UUID
+  const databaseStudentId = selectedStudentId !== "all" ? studentIdMapping[selectedStudentId] : "";
 
   // Get the selected student
   const selectedStudent = useMemo(() => {
     return students.find((s) => s.id === selectedStudentId) || null
   }, [students, selectedStudentId])
 
-  // Filter courses by selected student
-  const studentCourses = useMemo(() => {
-    if (selectedStudentId === "all") return []
-    return courses.filter((course) => course.studentId === selectedStudentId)
-  }, [courses, selectedStudentId])
+  // Fetch courses from Supabase when the selected student changes or after adding a new course
+  useEffect(() => {
+    if (selectedStudentId === "all") {
+      setDatabaseCourses([]);
+      return;
+    }
+
+    const fetchCourses = async () => {
+      setIsLoading(true);
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: courses, error } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('student_id', databaseStudentId);
+
+        if (error) {
+          console.error("Error fetching courses:", error);
+          return;
+        }
+
+        setDatabaseCourses(courses || []);
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, [databaseStudentId, refreshKey]);
+
+  // Convert database courses to the format expected by the UI
+  const transformedCourses = useMemo(() => {
+    return databaseCourses.map(dbCourse => ({
+      id: dbCourse.id,
+      name: dbCourse.name,
+      category: dbCourse.category,
+      term: dbCourse.term,
+      grade: dbCourse.grade,
+      credits: dbCourse.credits,
+      studentId: reverseStudentIdMapping[dbCourse.student_id] || dbCourse.student_id,
+      academicYear: dbCourse.academic_year || "2024-2025"
+    }));
+  }, [databaseCourses]);
+  
+  // Use the transformed courses instead of the ones from the store
+  const studentCourses = transformedCourses;
+
+  // Force a refresh of courses after modal closes
+  const handleModalOpenChange = (open: boolean) => {
+    setIsAddCourseModalOpen(open);
+    if (!open) {
+      // Refresh data when modal closes
+      setRefreshKey(prev => prev + 1);
+    }
+  };
+
+  // Manual refresh button handler
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Group courses by academic year
   const coursesByYear = useMemo(() => {
@@ -157,6 +241,26 @@ export function TranscriptView() {
         </div>
 
         <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAddCourseModalOpen(true)}
+            className="bg-[#5e8b7e] text-white hover:bg-[#4a6e63] border-[#5e8b7e]"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Course
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7]"
+          >
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+
           <div className="flex items-center gap-2">
             <span className="text-sm text-[#5e8b7e]">Academic Year:</span>
             <Select value={yearFilter} onValueChange={setYearFilter}>
@@ -196,9 +300,22 @@ export function TranscriptView() {
         </div>
       </div>
 
+      {/* Render the AddCourseModal with the mapped database ID */}
+      <AddCourseModal 
+        isOpen={isAddCourseModalOpen} 
+        onOpenChange={handleModalOpenChange} 
+        studentIdForCourse={databaseStudentId} 
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
-          {Object.keys(filteredCoursesByYear).length > 0 ? (
+          {isLoading ? (
+            <Card className="bg-white rounded-md shadow-sm">
+              <CardContent className="p-12 text-center">
+                <p className="text-[#5e8b7e]/70">Loading courses...</p>
+              </CardContent>
+            </Card>
+          ) : Object.keys(filteredCoursesByYear).length > 0 ? (
             Object.entries(filteredCoursesByYear)
               .sort(([yearA], [yearB]) => yearB.localeCompare(yearA))
               .map(([year, yearCourses]) => (
@@ -257,7 +374,7 @@ export function TranscriptView() {
                                     {course.grade}
                                   </Badge>
                                 </td>
-                                <td className="py-3 px-4">{course.credits.toFixed(1)}</td>
+                                <td className="py-3 px-4">{typeof course.credits === 'number' ? course.credits.toFixed(1) : course.credits}</td>
                                 <td className="py-3 px-4">{course.term}</td>
                               </tr>
                             ))
@@ -300,7 +417,7 @@ export function TranscriptView() {
                       <span className="text-[#5e8b7e]/70">Grade Level:</span> {selectedStudent?.gradeLevel}
                     </p>
                     <p>
-                      <span className="text-[#5e8b7e]/70">Student ID:</span> {selectedStudent?.id}
+                      <span className="text-[#5e8b7e]/70">Student ID:</span> {databaseStudentId || selectedStudent?.id}
                     </p>
                   </div>
                 </div>

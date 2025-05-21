@@ -5,15 +5,36 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { ActionResult } from "@/app/actions"
 
-// Define a schema for course validation
+// Define a schema for course validation with expanded term options
 const courseSchema = z.object({
   studentId: z.string().uuid("Invalid student ID format").min(1, "Student ID is required"),
   name: z.string().min(1, "Course name is required"),
   category: z.string().min(1, "Category is required"),
-  term: z.enum(["Fall Semester", "Spring Semester", "Full Year"], {
-    errorMap: () => ({ message: "Term must be Fall Semester, Spring Semester, or Full Year" })
+  // Update term enum to match all database values
+  term: z.enum([
+    "Fall Semester", 
+    "Spring Semester", 
+    "Full Year", 
+    "Summer Session", 
+    "Quarter 1", 
+    "Quarter 2", 
+    "Quarter 3", 
+    "Quarter 4"
+  ], {
+    errorMap: () => ({ message: "Please select a valid term" })
   }),
-  grade: z.string().min(1, "Grade is required"),
+  // Update grade to accept all valid enum values from the database
+  grade: z.enum([
+    "A+", "A", "A-", 
+    "B+", "B", "B-", 
+    "C+", "C", "C-", 
+    "D+", "D", "D-", 
+    "F", "Pass", "Fail", 
+    "In Progress", "Not Graded", 
+    "Exempt", "Audit"
+  ], {
+    errorMap: () => ({ message: "Please select a valid grade" })
+  }),
   credits: z.coerce.number().nonnegative("Credits must be non-negative").max(5, "Credits cannot exceed 5"),
   academicYear: z.string().optional(),
 });
@@ -51,11 +72,15 @@ export async function createCourse(
       academicYear: formData.get('academicYear')?.toString() || undefined,
     }
     
+    // Log the form data for debugging
+    console.log("Form data received:", courseData);
+    
     // Validate the course data
     const validationResult = courseSchema.safeParse(courseData)
     
     if (!validationResult.success) {
       const errors = validationResult.error.flatten().fieldErrors
+      console.error("Validation errors:", errors);
       return {
         success: false,
         message: "Please correct the errors below.",
