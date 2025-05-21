@@ -315,23 +315,32 @@ export function UpdateAssignmentModal({ open, onOpenChange, assignment, students
               <Label htmlFor="courseId" className="text-[#5e8b7e]">
                 Related Course
               </Label>
-              <Select 
-                value={courseId || "none"} 
-                onValueChange={(value) => setCourseId(value === "none" ? null : value)} 
-                name="courseId"
-              >
-                <SelectTrigger id="courseId" className={cn("border-[#5e8b7e]/20", fieldErrors.courseId ? "border-red-500" : "")}>
-                  <SelectValue placeholder="Select a course (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {coursesForSelection.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Select 
+                  value={courseId || "none"} 
+                  onValueChange={(value) => setCourseId(value === "none" ? null : value)} 
+                  name="courseId_display" // Change to a different name to avoid collision with the hidden input
+                >
+                  <SelectTrigger id="courseId" className={cn("border-[#5e8b7e]/20", fieldErrors.courseId ? "border-red-500" : "")}>
+                    <SelectValue placeholder="Select a course (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {coursesForSelection.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Hidden input for courseId that will properly handle null/None values */}
+                <input 
+                  type="hidden" 
+                  name="courseId" 
+                  value={courseId || ""} 
+                />
+              </>
               {fieldErrors.courseId && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.courseId[0]}</p>
               )}
