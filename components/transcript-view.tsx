@@ -210,22 +210,43 @@ export function TranscriptView() {
   if (selectedStudentId === "all") {
     return (
       <div className="p-6">
-        <Card className="bg-white rounded-md shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[#5e8b7e]">Academic Transcript</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="text-[#5e8b7e] mb-4">
-                <Filter className="h-12 w-12 mx-auto opacity-50" />
-                <h3 className="mt-2 text-lg font-medium">No Student Selected</h3>
-              </div>
-              <p className="text-[#5e8b7e]/70 max-w-md">
-                Please select a specific student from the dropdown menu above to view their academic transcript.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <h1 className="text-2xl font-bold text-[#5e8b7e] mb-6">Academic Transcript</h1>
+        
+        <div className="bg-white rounded-md shadow-sm p-4 mb-6">
+          <p className="text-gray-600 mb-4">Select a student to view their transcript</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {students
+            .filter(student => student.id !== "all")
+            .map(student => (
+              <Card 
+                key={student.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => useStore.getState().setSelectedStudent(student.id)}
+              >
+                <CardContent className="p-6 flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-[#5e8b7e]/10 flex items-center justify-center mb-4">
+                    {student.profileImage ? (
+                      <img 
+                        src={student.profileImage} 
+                        alt={student.name} 
+                        className="w-14 h-14 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-[#5e8b7e]/20 flex items-center justify-center text-[#5e8b7e] text-xl font-semibold">
+                        {student.initials || student.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="font-medium text-[#5e8b7e] text-center">{student.name}</h3>
+                  {student.gradeLevel && (
+                    <p className="text-sm text-gray-500 mt-1">{student.gradeLevel}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+        </div>
       </div>
     )
   }

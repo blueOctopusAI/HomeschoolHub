@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useStore, type Student, type Course, type Lesson, type Assignment } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -8,18 +8,39 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format, isWithinInterval, parseISO } from "date-fns"
 import { CalendarIcon, Printer, UserRound } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Card, CardContent } from "@/components/ui/card"
 
-export function ProgressReportView() {
+interface ProgressReportViewProps {
+  userStudents?: Student[]
+}
+
+export function ProgressReportView({ userStudents }: ProgressReportViewProps) {
   // Get data from Zustand store
   const students = useStore((state) => state.students)
   const courses = useStore((state) => state.courses)
   const lessons = useStore((state) => state.lessons)
   const assignments = useStore((state) => state.assignments)
   const selectedStudentId = useStore((state) => state.selectedStudent)
+  const setSelectedStudent = useStore((state) => state.setSelectedStudent)
+  const setStudents = useStore((state) => state.setStudents)
 
   // Local state for date range
   const [startDate, setStartDate] = useState<Date | undefined>(new Date())
   const [endDate, setEndDate] = useState<Date | undefined>(new Date())
+
+  // Update the store's students with the ones from the database if provided
+  useEffect(() => {
+    if (userStudents && userStudents.length > 0) {
+      // Add the "All Students" option if it doesn't exist in userStudents
+      const allStudentsIncluded = userStudents.some(s => s.id === "all")
+      const updatedStudents = allStudentsIncluded 
+        ? userStudents 
+        : [{ id: "all", name: "All Students" }, ...userStudents]
+      
+      // Update the store with the database students
+      setStudents(updatedStudents)
+    }
+  }, [userStudents, setStudents])
 
   // Get selected student and check if all students are selected
   const selectedStudent = useMemo(() => 
@@ -27,6 +48,14 @@ export function ProgressReportView() {
   , [students, selectedStudentId])
   
   const isAllStudentsSelected = selectedStudentId === "all"
+
+  // Filter out the "all" student for the student selection cards
+  const individualStudents = students.filter(student => student.id !== "all")
+
+  // Handle student card click
+  const handleStudentCardClick = (studentId: string) => {
+    setSelectedStudent(studentId)
+  }
 
   // Filter lessons and assignments based on date range and selected student
   const filteredLessons = useMemo(() => lessons.filter((lesson) => {
@@ -148,12 +177,40 @@ export function ProgressReportView() {
       </div>
 
       {isAllStudentsSelected ? (
-        <div className="bg-white rounded-md shadow-sm p-6 text-center">
-          <UserRound className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-          <h2 className="text-xl font-medium text-gray-700 mb-2">Select a student to view a report</h2>
-          <p className="text-gray-500">
-            Please select a specific student from the sidebar to generate a progress report.
-          </p>
+        <div>
+          <div className="bg-white rounded-md shadow-sm p-4 mb-6">
+            <p className="text-gray-600 mb-4">Select a student to view their progress report</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {individualStudents.map(student => (
+              <Card 
+                key={student.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleStudentCardClick(student.id)}
+              >
+                <CardContent className="p-6 flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-[#5e8b7e]/10 flex items-center justify-center mb-4">
+                    {student.profileImage ? (
+                      <img 
+                        src={student.profileImage} 
+                        alt={student.name} 
+                        className="w-14 h-14 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-[#5e8b7e]/20 flex items-center justify-center text-[#5e8b7e] text-xl font-semibold">
+                        {student.initials || student.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="font-medium text-[#5e8b7e] text-center">{student.name}</h3>
+                  {student.gradeLevel && (
+                    <p className="text-sm text-gray-500 mt-1">{student.gradeLevel}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       ) : selectedStudent && startDate && endDate ? (
         <div className="bg-white rounded-md shadow-sm p-4 mb-4 print:shadow-none">
