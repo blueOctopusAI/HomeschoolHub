@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 
 export default async function ProfilePage() {
   // Get the current session server-side
-  const supabase = createSupabaseServerComponentClient()
+  const supabase = await createSupabaseServerComponentClient()
   
   // Get current user
   const { data: { user } } = await supabase.auth.getUser()

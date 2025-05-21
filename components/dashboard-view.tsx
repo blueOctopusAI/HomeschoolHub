@@ -188,15 +188,7 @@ export const DashboardView = memo(function DashboardView() {
                       </div>
                       <Badge
                         variant="outline"
-                        className={`
-                          ${
-                            assignment.status === "Graded"
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : assignment.status === "Submitted"
-                                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                : "bg-blue-50 text-blue-700 border-blue-200"
-                          }
-                        `}
+                        className={`${assignment.status === "Graded" ? "bg-green-50 text-green-700 border-green-200" : assignment.status === "Submitted" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
                       >
                         {assignment.status}
                       </Badge>
