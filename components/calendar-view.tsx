@@ -46,7 +46,23 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate])
 
   // Generate days of the week (Monday to Friday) - memoize this calculation
-  const daysOfWeek = useMemo(() => Array.from({ length: 5 }).map((_, index) => addDays(weekStart, index)), [weekStart])
+  const daysOfWeek = useMemo(() => 
+    Array.from({ length: 5 }).map((_, index) => addDays(weekStart, index)), 
+  [weekStart])
+
+  // Remove the timeSlots state since we're not using it anymore
+  // const timeSlots = useMemo(() => {
+  //   // Generate half-hour time slots from 8:00 AM to 8:00 PM
+  //   const slots = [];
+  //   for (let hour = 8; hour <= 20; hour++) {
+  //     for (let minute of [0, 30]) {
+  //       const time = new Date();
+  //       time.setHours(hour, minute, 0, 0);
+  //       slots.push(time);
+  //     }
+  //   }
+  //   return slots;
+  // }, [])
 
   // Get student name for display - memoize this calculation
   const studentName = useMemo(() => {
@@ -71,7 +87,7 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
     })
   }, [lessons, daysOfWeek, selectedStudent])
 
-  // Group lessons by day - memoize this calculation
+  // Group and sort lessons by day - memoize this calculation
   const lessonsByDay = useMemo(() => {
     return daysOfWeek.reduce(
       (acc, day) => {
@@ -236,170 +252,174 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
   )
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Weekly Calendar</h1>
-          <p className="text-[#333]">Viewing schedule for {studentName}</p>
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-800">Weekly Calendar</h1>
+            <p className="text-[#333]">Viewing schedule for {studentName}</p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
-        {/* Day headers */}
-        {daysOfWeek.map((day, index) => {
-          const dayName = format(day, "EEEE").toLowerCase()
-          const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {/* Day headers */}
+          {daysOfWeek.map((day, index) => {
+            const dayName = format(day, "EEEE").toLowerCase()
+            const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
 
-          return (
-            <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
-              <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
-              <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
-              <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
-            </div>
-          )
-        })}
+            return (
+              <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
+                <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
+                <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
+                <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
+              </div>
+            )
+          })}
 
-        {/* Calendar cells */}
-        {daysOfWeek.map((day, index) => {
-          const dayKey = format(day, "yyyy-MM-dd")
-          const dayLessons = lessonsByDay[dayKey] || []
-          const dayName = format(day, "EEEE").toLowerCase()
-          const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
-          const isToday = isSameDay(day, new Date())
+          {/* Calendar cells */}
+          {daysOfWeek.map((day, index) => {
+            const dayKey = format(day, "yyyy-MM-dd")
+            const dayLessons = lessonsByDay[dayKey] || []
+            const dayName = format(day, "EEEE").toLowerCase()
+            const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+            const isToday = isSameDay(day, new Date())
 
-          return (
-            <div
-              key={`cell-${index}`}
-              className={cn(
-                "min-h-[400px] border rounded-lg p-2 relative",
-                colorSet.border,
-                colorSet.bg,
-                "bg-opacity-20",
-                isToday && "bg-opacity-40",
-              )}
-            >
-              {dayLessons.length > 0 ? (
-                <div className="space-y-2">
-                  {dayLessons.map((lesson) => {
-                    const startTime = parseISO(lesson.startDate)
-                    const endTime = parseISO(lesson.endDate)
-                    const isCurrentlyProcessing = pendingLessonId === lesson.id;
-
-                    return (
-                      <div
-                        key={lesson.id}
-                        onClick={() => handleEditLesson(lesson)}
-                        className={cn(
-                          "rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5",
-                          lesson.completed 
-                            ? "bg-[#e6f4ea] border-l-4 border-l-green-500" 
-                            : "bg-[#f0f4f2]"
-                        )}
-                      >
-                        {lesson.completed && (
-                          <div className="bg-green-100 rounded-t-md mx-[-8px] mt-[-4px] mb-1 px-2 py-0.5 text-xs text-green-800 font-medium border-b border-green-200 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                            </svg>
-                            COMPLETED
-                          </div>
-                        )}
-                        <div className="flex justify-between items-start">
-                          <div className="font-medium text-[#5e8b7e] flex-1">
-                            {lesson.subjectName}
-                          </div>
-                          <div className="flex gap-1 mt-0.5">
-                            {/* Toggle complete button */}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className={`h-6 w-6 p-0 ${lesson.completed ? 'text-green-600 bg-green-50 border border-green-200 rounded-full' : 'text-gray-400 hover:text-green-600 hover:bg-green-50 hover:border hover:border-green-200 hover:rounded-full'}`}
-                              onClick={(e) => handleToggleComplete(lesson.id, lesson.completed, e)}
-                              disabled={isPending && isCurrentlyProcessing}
-                            >
-                              {isPending && isCurrentlyProcessing ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Check className="h-3 w-3" />
-                              )}
-                            </Button>
-                            
-                            {/* Delete button */}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                              onClick={(e) => handleDeleteLesson(lesson.id, e)}
-                              disabled={isPending && isCurrentlyProcessing}
-                            >
-                              {isPending && isCurrentlyProcessing ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                          
-                        <div className="text-xs text-[#5e8b7e] mt-1">
-                          {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
-                        </div>
-
-                        {/* Student tags */}
-                        {lesson.studentIds.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {lesson.studentIds.map((id: string) => (
-                              <Badge
-                                key={id}
-                                className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5 font-normal"
-                              >
-                                {getStudentName(id)}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {lesson.description && (
-                          <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
-                        )}
-
-                        {/* This completed indicator at the bottom is now redundant with our top banner and can be removed */}
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center text-[#5e8b7e]/50 text-sm">No lessons</div>
-              )}
-
-              <Button
-                size="sm"
+            return (
+              <div
+                key={`cell-${index}`}
                 className={cn(
-                  "absolute bottom-2 right-2 h-8 w-8 rounded-full p-0",
-                  colorSet.text.replace("text", "bg"),
-                  "hover:opacity-90 text-white",
+                  "min-h-[400px] border rounded-lg p-2 relative",
+                  colorSet.border,
+                  colorSet.bg,
+                  "bg-opacity-20",
+                  isToday && "bg-opacity-40",
                 )}
-                onClick={() => handleAddLesson(day)}
               >
-                <Plus className="h-4 w-4" />
-                <span className="sr-only">Add lesson</span>
-              </Button>
-            </div>
-          )
-        })}
-      </div>
+                {dayLessons.length > 0 ? (
+                  <div className="space-y-2">
+                    {dayLessons.map((lesson) => {
+                      const startTime = parseISO(lesson.startDate)
+                      const endTime = parseISO(lesson.endDate)
+                      const isCurrentlyProcessing = pendingLessonId === lesson.id;
 
-      {/* Lesson Modal */}
-      <LessonModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        selectedDate={selectedDate}
-        editingLesson={editingLesson}
-        students={students}
-      />
-    </div>
+                      return (
+                        <div
+                          key={lesson.id}
+                          onClick={() => handleEditLesson(lesson)}
+                          className={cn(
+                            "rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5",
+                            lesson.completed 
+                              ? "bg-[#e6f4ea] border-l-4 border-l-green-500" 
+                              : "bg-[#f0f4f2]"
+                          )}
+                        >
+                          {lesson.completed && (
+                            <div className="bg-green-100 rounded-t-md mx-[-8px] mt-[-4px] mb-1 px-2 py-0.5 text-xs text-green-800 font-medium border-b border-green-200 flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                              </svg>
+                              COMPLETED
+                            </div>
+                          )}
+                          <div className="flex justify-between items-start">
+                            <div className="font-medium text-[#5e8b7e] flex-1">
+                              {lesson.subjectName}
+                            </div>
+                            <div className="flex gap-1 mt-0.5">
+                              {/* Toggle complete button */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className={`h-6 w-6 p-0 ${lesson.completed ? 'text-green-600 bg-green-50 border border-green-200 rounded-full' : 'text-gray-400 hover:text-green-600 hover:bg-green-50 hover:border hover:border-green-200 hover:rounded-full'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleComplete(lesson.id, lesson.completed, e);
+                                }}
+                                disabled={isPending && isCurrentlyProcessing}
+                              >
+                                {isPending && isCurrentlyProcessing ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
+                              </Button>
+                              
+                              {/* Delete button */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteLesson(lesson.id, e);
+                                }}
+                                disabled={isPending && isCurrentlyProcessing}
+                              >
+                                {isPending && isCurrentlyProcessing ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                            
+                          <div className="text-xs text-[#5e8b7e] mt-1 font-medium">
+                            {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
+                          </div>
+
+                          {/* Student tags */}
+                          {lesson.studentIds.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {lesson.studentIds.map((id: string) => (
+                                <Badge
+                                  key={id}
+                                  className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5 font-normal"
+                                >
+                                  {getStudentName(id)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+
+                          {lesson.description && (
+                            <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-[#5e8b7e]/50 text-sm">No lessons</div>
+                )}
+
+                <Button
+                  size="sm"
+                  className={cn(
+                    "absolute bottom-2 right-2 h-8 w-8 rounded-full p-0",
+                    colorSet.text.replace("text", "bg"),
+                    "hover:opacity-90 text-white",
+                  )}
+                  onClick={() => handleAddLesson(day)}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Add lesson</span>
+                </Button>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Lesson Modal */}
+        <LessonModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          selectedDate={selectedDate}
+          editingLesson={editingLesson}
+          students={students}
+        />
+      </div>
   )
 }
