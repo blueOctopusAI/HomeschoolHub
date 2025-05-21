@@ -323,9 +323,19 @@ export function ChecklistView() {
                   todaysLessons.map((lesson) => renderLessonItem(lesson))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <BookOpen className="h-12 w-12 text-[#5e8b7e]/30 mb-4" />
-                    <h3 className="text-lg font-medium text-[#5e8b7e]">No lessons scheduled for today</h3>
-                    <p className="text-[#5e8b7e]/70 mt-1">Enjoy your free time!</p>
+                    <BookOpen className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
+                    <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">Nothing on the checklist for today!</h3>
+                    <p className="text-[#5e8b7e]/70 mb-6 max-w-md">Plan new lessons for {selectedStudent === "all" ? "your students" : students.find(s => s.id === selectedStudent)?.name} by visiting the Calendar view.</p>
+                    <Button 
+                      variant="outline"
+                      className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                      onClick={() => {
+                        useStore.getState().setCurrentView("calendar")
+                      }}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Go to Calendar
+                    </Button>
                   </div>
                 )}
               </div>
@@ -366,9 +376,19 @@ export function ChecklistView() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <CheckSquare className="h-12 w-12 text-[#5e8b7e]/30 mb-4" />
-                  <h3 className="text-lg font-medium text-[#5e8b7e]">No lessons scheduled for this week</h3>
-                  <p className="text-[#5e8b7e]/70 mt-1">Time to plan your week!</p>
+                  <CheckSquare className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
+                  <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">All clear! Time to plan?</h3>
+                  <p className="text-[#5e8b7e]/70 mb-6 max-w-md">No lessons scheduled for this week. Head to the Calendar view to create your weekly schedule.</p>
+                  <Button 
+                    variant="outline"
+                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                    onClick={() => {
+                      useStore.getState().setCurrentView("calendar")
+                    }}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Go to Calendar
+                  </Button>
                 </div>
               )}
             </CardContent>

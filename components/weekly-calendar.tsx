@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Plus, Loader2 } from "lucide-react"
+import { Plus, Loader2, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -399,7 +399,23 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
                 })}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-[#5e8b7e]/50 text-sm">No lessons</div>
+              <div className="h-full flex flex-col items-center justify-center text-center py-6">
+                <Calendar className="h-12 w-12 text-[#5e8b7e]/30 mb-3" />
+                <p className="text-[#5e8b7e] font-medium mb-2">No lessons scheduled!</p>
+                <p className="text-[#5e8b7e]/60 text-sm mb-4">Time to plan activities for {format(day, "EEEE")}?</p>
+                <Button
+                  size="sm"
+                  className={cn(
+                    "px-4",
+                    colorSet.text.replace("text", "bg"),
+                    "hover:opacity-90 text-white",
+                  )}
+                  onClick={() => handleAddLesson(day)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Lesson
+                </Button>
+              </div>
             )}
 
             <Button

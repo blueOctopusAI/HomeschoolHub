@@ -307,26 +307,42 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="text-[#5e8b7e] mb-4">
-                <BookOpen className="h-12 w-12 mx-auto opacity-50" />
-                <h3 className="mt-2 text-lg font-medium">No assignments found</h3>
+                <BookOpen className="h-16 w-16 mx-auto opacity-60" />
+                <h3 className="mt-3 text-xl font-medium">
+                  {searchQuery || statusFilter !== "all"
+                    ? "No assignments match your filters"
+                    : "No assignments here yet!"}
+                </h3>
               </div>
-              <p className="text-[#5e8b7e]/70 max-w-md">
+              <p className="text-[#5e8b7e]/70 max-w-md mb-6">
                 {searchQuery || statusFilter !== "all"
                   ? "Try adjusting your filters to see more assignments."
-                  : "Get started by creating your first assignment."}
+                  : `Get started by creating your first assignment for ${selectedStudent === "all" ? "your students" : students.find(s => s.id === selectedStudent)?.name}.`}
               </p>
-              {(searchQuery || statusFilter !== "all") && (
-                <Button
-                  variant="outline"
-                  className="mt-4 border-[#5e8b7e] text-[#5e8b7e]"
-                  onClick={() => {
-                    setSearchQuery("")
-                    setStatusFilter("all")
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              )}
+              <div className="flex flex-wrap justify-center gap-4">
+                {(searchQuery || statusFilter !== "all") && (
+                  <Button
+                    variant="outline"
+                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setStatusFilter("all")
+                    }}
+                  >
+                    <Filter className="mr-2 h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                )}
+                {!searchQuery && statusFilter === "all" && (
+                  <Button 
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-white"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create New Assignment
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

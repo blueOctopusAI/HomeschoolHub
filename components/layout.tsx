@@ -5,7 +5,7 @@ import { Sidebar } from "./sidebar"
 import { Topbar } from "./topbar"
 import { useAuthUser, useAuthLoading } from "@/lib/store"
 import { usePathname } from "next/navigation"
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Toaster } from "@/components/ui/toaster"
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -14,13 +14,27 @@ export function Layout({ children }: { children: ReactNode }) {
   const isLoading = useAuthLoading()
   const pathname = usePathname()
   
+  // Add a timeout state to bypass loading state if it takes too long
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  
+  // Set a timeout to bypass the loading state after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingTimeout(true)
+    }, 3000)
+    
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [])
+  
   // Memoize the auth page check to avoid unnecessary rerenders
   const isAuthPage = useMemo(() => {
     return pathname === "/login" || pathname === "/signup"
   }, [pathname])
   
-  // If loading, show a loading indicator
-  if (isLoading) {
+  // If loading and the timeout hasn't occurred yet, show a loading indicator
+  if (isLoading && !loadingTimeout) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#faf9f5]">
         <div className="text-[#5e8b7e]">Loading...</div>

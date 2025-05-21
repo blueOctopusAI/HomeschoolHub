@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Printer, FileDown, Filter, Plus, RefreshCcw } from "lucide-react"
+import { Printer, FileDown, Filter, Plus, RefreshCcw, ScrollText } from "lucide-react"
 import { useStore, type Course, type Student } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -415,7 +415,12 @@ export function TranscriptView() {
           ) : (
             <Card className="bg-white rounded-md shadow-sm">
               <CardContent className="p-12 text-center">
-                <p className="text-[#5e8b7e]/70">No courses have been added to this student's transcript yet.</p>
+                <div className="flex flex-col items-center">
+                  <ScrollText className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
+                  <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">No courses recorded for {selectedStudent?.name} yet</h3>
+                  <p className="text-[#5e8b7e]/70 mb-6 max-w-md">Add courses to build a complete academic transcript.</p>
+                  {/* The Add New Course button is already present in the header */}
+                </div>
               </CardContent>
             </Card>
           )}

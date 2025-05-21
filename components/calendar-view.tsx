@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useTransition } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Plus, Edit, Trash2, Check, X, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Check, X, Loader2, Calendar } from "lucide-react"
 import { Button } from "./ui/button"
 import { useStore, type Lesson, type Student } from "@/lib/store"
 import { LessonModal } from "./lesson-modal"
@@ -392,7 +392,23 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                     })}
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-[#5e8b7e]/50 text-sm">No lessons</div>
+                  <div className="h-full flex flex-col items-center justify-center text-center py-6">
+                  <Calendar className="h-12 w-12 text-[#5e8b7e]/30 mb-3" />
+                  <p className="text-[#5e8b7e] font-medium mb-2">Your calendar is clear for this day!</p>
+                  <p className="text-[#5e8b7e]/60 text-sm mb-4">No lessons scheduled for {format(day, "EEEE")}.</p>
+                  <Button
+                    size="sm"
+                    className={cn(
+                      "px-4",
+                      colorSet.text.replace("text", "bg"),
+                      "hover:opacity-90 text-white",
+                    )}
+                    onClick={() => handleAddLesson(day)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Lesson
+                  </Button>
+                </div>
                 )}
 
                 <Button
