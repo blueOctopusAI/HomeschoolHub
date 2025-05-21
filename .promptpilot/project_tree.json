@@ -837,6 +837,13 @@
         "parentKey": "components"
       },
       {
+        "key": "components/data-sync-initializer.tsx",
+        "title": "data-sync-initializer.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
         "key": "components/event-form.tsx",
         "title": "event-form.tsx",
         "children": [],

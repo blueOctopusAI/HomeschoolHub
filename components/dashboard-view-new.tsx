@@ -1,12 +1,13 @@
 "use client"
 
-import { memo, useMemo } from "react"
+import { memo, useMemo, useEffect } from "react"
 import { useStore, type Student, type Lesson, type Course, type Assignment } from "@/lib/store"
 import { format, addDays, isWithinInterval } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { CalendarDays, BookOpen, CheckSquare, GraduationCap } from "lucide-react"
+import { useDataOperations } from "@/lib/hooks/use-data-operations"
 
 export const DashboardView = memo(function DashboardView() {
   // Get data from Zustand store using individual selectors
@@ -16,6 +17,15 @@ export const DashboardView = memo(function DashboardView() {
   const assignments = useStore((state) => state.assignments)
   const currentDate = useStore((state) => state.currentDate)
   const selectedStudent = useStore((state) => state.selectedStudent)
+  
+  const { refreshData, toggleLessonComplete } = useDataOperations()
+
+  // Refresh data when component mounts
+  useEffect(() => {
+    refreshData().catch(error => {
+      console.error("Failed to refresh dashboard data:", error)
+    })
+  }, [refreshData])
 
   // Get selected student name
   const student = useMemo(() => {
@@ -124,6 +134,15 @@ export const DashboardView = memo(function DashboardView() {
     }
   }, [courses, selectedStudent])
 
+  // Handle toggling a lesson's completion status
+  const handleToggleCompletion = async (lessonId: string) => {
+    try {
+      await toggleLessonComplete(lessonId)
+    } catch (error) {
+      console.error("Failed to toggle lesson completion:", error)
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header with student info */}
@@ -159,6 +178,8 @@ export const DashboardView = memo(function DashboardView() {
                       <Badge
                         variant="outline"
                         className={`mt-2 w-fit ${lesson.completed ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                        onClick={() => handleToggleCompletion(lesson.id)}
+                        style={{ cursor: 'pointer' }}
                       >
                         {lesson.completed ? "Completed" : "Pending"}
                       </Badge>

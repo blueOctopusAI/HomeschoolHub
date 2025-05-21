@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useStore } from "@/lib/store"
 import { usePathname } from "next/navigation"
 import type { View } from "@/lib/store"
+import { DataSyncInitializer } from "@/components/data-sync-initializer"
 
 // List of valid views
 const VALID_VIEWS = [
@@ -30,5 +31,10 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, setCurrentView])
 
-  return <>{children}</>
+  // Wrap children with DataSyncInitializer for automatic database synchronization
+  return (
+    <DataSyncInitializer>
+      {children}
+    </DataSyncInitializer>
+  )
 }
