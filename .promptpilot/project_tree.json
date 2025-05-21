@@ -293,6 +293,36 @@
         "parentKey": "app"
       },
       {
+        "key": "app/student",
+        "title": "student",
+        "children": [
+          {
+            "key": "app/student/[studentId]",
+            "title": "[studentId]",
+            "children": [
+              {
+                "key": "app/student/[studentId]/page.tsx",
+                "title": "page.tsx",
+                "children": [],
+                "isLeaf": true,
+                "parentKey": "app/student/[studentId]"
+              }
+            ],
+            "isLeaf": false,
+            "parentKey": "app/student"
+          },
+          {
+            "key": "app/student/layout.tsx",
+            "title": "layout.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/student"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/transcript",
         "title": "transcript",
         "children": [
@@ -914,6 +944,20 @@
       {
         "key": "components/signup-form.tsx",
         "title": "signup-form.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/student-checklist-view.tsx",
+        "title": "student-checklist-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/student-portal-layout.tsx",
+        "title": "student-portal-layout.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
