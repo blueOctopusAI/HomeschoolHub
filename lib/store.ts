@@ -108,9 +108,9 @@ type Store = {
 // Sample data
 const sampleStudents: Student[] = [
   { id: "all", name: "All Students" },
-  { id: "student1", name: "Emma Johnson", gradeLevel: "3rd Grade", initials: "EJ" },
-  { id: "student2", name: "Noah Williams", gradeLevel: "5th Grade", initials: "NW" },
-  { id: "student3", name: "Olivia Davis", gradeLevel: "7th Grade", initials: "OD" },
+  { id: "bb0c2d70-4553-4c25-95f1-d4dbf38ec202", name: "Emma Johnson", gradeLevel: "3rd Grade", initials: "EJ" },
+  { id: "9948fed0-2182-43a2-b186-1331b083eecd", name: "Noah Williams", gradeLevel: "5th Grade", initials: "NW" },
+  { id: "57b063a8-fb4e-4421-bc15-7399601c7dc1", name: "Olivia Davis", gradeLevel: "7th Grade", initials: "OD" },
 ]
 
 const sampleSubjects: Subject[] = [
@@ -136,7 +136,7 @@ const sampleLessons: Lesson[] = [
     subjectColor: "#4CAF50",
     startDate: new Date(today.setHours(9, 0, 0, 0)).toISOString(),
     endDate: new Date(today.setHours(10, 0, 0, 0)).toISOString(),
-    studentIds: ["student1", "student2"],
+    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "9948fed0-2182-43a2-b186-1331b083eecd"],
     description: "Multiplication and division practice",
     objectives: "Master multiplication tables 1-12",
     materialsNeeded: "Workbook, pencils, calculator",
@@ -150,7 +150,7 @@ const sampleLessons: Lesson[] = [
     subjectColor: "#2196F3",
     startDate: new Date(today.setHours(10, 30, 0, 0)).toISOString(),
     endDate: new Date(today.setHours(11, 30, 0, 0)).toISOString(),
-    studentIds: ["student1", "student3"],
+    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "57b063a8-fb4e-4421-bc15-7399601c7dc1"],
     description: "Plant life cycles",
     objectives: "Understand the stages of plant growth",
     materialsNeeded: "Seeds, soil, pots, water",
@@ -164,7 +164,7 @@ const sampleLessons: Lesson[] = [
     subjectColor: "#9C27B0",
     startDate: new Date(tomorrow.setHours(9, 0, 0, 0)).toISOString(),
     endDate: new Date(tomorrow.setHours(10, 0, 0, 0)).toISOString(),
-    studentIds: ["student2"],
+    studentIds: ["9948fed0-2182-43a2-b186-1331b083eecd"],
     description: "Reading comprehension",
     objectives: "Identify main ideas and supporting details",
     materialsNeeded: "Book, notebook, pencils",
@@ -178,7 +178,7 @@ const sampleLessons: Lesson[] = [
     subjectColor: "#FF9800",
     startDate: new Date(yesterday.setHours(13, 0, 0, 0)).toISOString(),
     endDate: new Date(yesterday.setHours(14, 0, 0, 0)).toISOString(),
-    studentIds: ["student1", "student2", "student3"],
+    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "9948fed0-2182-43a2-b186-1331b083eecd", "57b063a8-fb4e-4421-bc15-7399601c7dc1"],
     description: "Ancient civilizations",
     objectives: "Compare and contrast ancient Egypt and Mesopotamia",
     materialsNeeded: "Textbook, map, timeline",
@@ -195,7 +195,7 @@ const sampleCourses: Course[] = [
     term: "Full Year",
     grade: "A",
     credits: 1.0,
-    studentId: "student1",
+    studentId: "bb0c2d70-4553-4c25-95f1-d4dbf38ec202",
     academicYear: "2023-2024",
   },
   {
@@ -215,7 +215,7 @@ const sampleCourses: Course[] = [
     term: "Fall Semester",
     grade: "A-",
     credits: 0.5,
-    studentId: "student2",
+    studentId: "9948fed0-2182-43a2-b186-1331b083eecd",
     academicYear: "2023-2024",
   },
   {
@@ -235,7 +235,7 @@ const sampleCourses: Course[] = [
     term: "Full Year",
     grade: "A",
     credits: 1.0,
-    studentId: "student3",
+    studentId: "57b063a8-fb4e-4421-bc15-7399601c7dc1",
     academicYear: "2024-2025",
   },
   {
@@ -255,7 +255,7 @@ const sampleAssignments: Assignment[] = [
     id: "assignment1",
     title: "Math Worksheet: Fractions",
     description: "Complete problems 1-20 on fractions worksheet",
-    studentIds: ["student1", "student2"],
+    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "9948fed0-2182-43a2-b186-1331b083eecd"],
     dueDate: new Date(today.setDate(today.getDate() + 2)).toISOString(),
     status: "Not Started",
     pointsPossible: 100,
@@ -285,7 +285,7 @@ const sampleAssignments: Assignment[] = [
     id: "assignment4",
     title: "History Essay: Civil War",
     description: "Write a 5-page essay on the causes of the Civil War",
-    studentIds: ["student2", "student3"],
+    studentIds: ["9948fed0-2182-43a2-b186-1331b083eecd", "57b063a8-fb4e-4421-bc15-7399601c7dc1"],
     dueDate: new Date(today.setDate(today.getDate() - 5)).toISOString(),
     status: "Graded",
     pointsPossible: 100,

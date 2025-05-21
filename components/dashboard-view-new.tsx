@@ -24,43 +24,18 @@ export const DashboardView = memo(function DashboardView() {
       : students.find((s) => s.id === selectedStudent) || { name: "All Students", gradeLevel: "" }
   }, [selectedStudent, students])
 
-  // Get today's day of the week
-  const today = useMemo(() => {
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    return days[currentDate.getDay()]
-  }, [currentDate])
-
   // Filter lessons for today based on selected student and current date
   const todaysLessons = useMemo(() => {
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
-    console.log('Dashboard: Selected student mapping', selectedStudent, '->', dbStudentId);
-    
     // Get today's date in the format the database uses
     const todayDate = new Date();
     const todayStr = format(todayDate, 'yyyy-MM-dd');
-    console.log('Looking for lessons on date:', todayStr);
+    console.log('Looking for lessons on date:', todayStr, 'for student ID:', selectedStudent);
     
     // Use the formatted date to find lessons for today
     return lessons.filter((lesson) => {
       // Check if this lesson is for the selected student
-      const isForSelectedStudent = dbStudentId === 'all' || 
-                                 lesson.studentIds.includes(dbStudentId);
+      const isForSelectedStudent = selectedStudent === 'all' || 
+                                 lesson.studentIds.includes(selectedStudent);
       
       // Check if this lesson is scheduled for today's date
       const lessonDate = new Date(lesson.startDate);
@@ -80,28 +55,10 @@ export const DashboardView = memo(function DashboardView() {
   // Filter assignments due in the next 7 days
   const upcomingAssignments = useMemo(() => {
     const nextWeek = addDays(currentDate, 7)
-    
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
 
     return assignments
       .filter((assignment) => {
-        const isForSelectedStudent = dbStudentId === "all" || assignment.studentIds.includes(dbStudentId)
+        const isForSelectedStudent = selectedStudent === "all" || assignment.studentIds.includes(selectedStudent)
         const dueDate = new Date(assignment.dueDate)
         const isDueSoon = isWithinInterval(dueDate, { start: currentDate, end: nextWeek })
 
@@ -112,26 +69,8 @@ export const DashboardView = memo(function DashboardView() {
 
   // Calculate weekly progress
   const weeklyProgress = useMemo(() => {
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
-    
     const filteredLessons = lessons.filter((lesson) => {
-      return dbStudentId === "all" || lesson.studentIds.includes(dbStudentId)
+      return selectedStudent === "all" || lesson.studentIds.includes(selectedStudent)
     })
 
     const totalLessons = filteredLessons.length
@@ -148,23 +87,8 @@ export const DashboardView = memo(function DashboardView() {
   // Calculate GPA if available
   const gpaData = useMemo(() => {
     if (selectedStudent === "all") return null
-    
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
 
-    const studentCourses = courses.filter((course) => course.studentId === dbStudentId)
+    const studentCourses = courses.filter((course) => course.studentId === selectedStudent)
     if (studentCourses.length === 0) return null
 
     const gradePoints: Record<string, number> = {

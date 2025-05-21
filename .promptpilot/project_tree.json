@@ -823,6 +823,13 @@
         "parentKey": "components"
       },
       {
+        "key": "components/dashboard-view-new.tsx",
+        "title": "dashboard-view-new.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
         "key": "components/dashboard-view.tsx",
         "title": "dashboard-view.tsx",
         "children": [],
@@ -881,6 +888,13 @@
       {
         "key": "components/main-layout.tsx",
         "title": "main-layout.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/mini-calendar.tsx",
+        "title": "mini-calendar.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
