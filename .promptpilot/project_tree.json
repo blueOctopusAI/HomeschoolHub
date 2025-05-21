@@ -147,6 +147,21 @@
         "parentKey": "app"
       },
       {
+        "key": "app/profile",
+        "title": "profile",
+        "children": [
+          {
+            "key": "app/profile/page.tsx",
+            "title": "page.tsx",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/profile"
+          }
+        ],
+        "isLeaf": false,
+        "parentKey": "app"
+      },
+      {
         "key": "app/reports",
         "title": "reports",
         "children": [

@@ -2,48 +2,133 @@
 
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
-import { addProfile } from "../app/actions"
+import { updateMyProfile } from "@/app/actions"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
 
 // Loading button component with pending state
 function SubmitButton() {
   const { pending } = useFormStatus()
   
   return (
-    <button 
+    <Button 
       type="submit"
       disabled={pending}
-      className="px-4 py-2 bg-[#5e8b7e] text-white rounded-md hover:bg-[#4a6d62] transition-colors disabled:opacity-70 w-full sm:w-auto"
+      className="w-full sm:w-auto bg-[#5e8b7e] hover:bg-[#4a6d62]"
     >
-      {pending ? "Adding..." : "Add Profile"}
-    </button>
+      {pending ? "Saving..." : "Save Changes"}
+    </Button>
   )
 }
 
 const initialState = {
   success: false,
-  message: ""
+  message: null,
+  errors: {}
 }
 
-export function ProfileForm() {
-  const [state, formAction] = useActionState(addProfile, initialState)
+interface ProfileData {
+  full_name?: string;
+  timezone?: string;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
+  id?: string;
+}
+
+interface ProfileFormProps {
+  profile: ProfileData | null;
+}
+
+export function ProfileForm({ profile }: ProfileFormProps) {
+  const [state, formAction] = useActionState(updateMyProfile, initialState)
   
+  // Form fields state to handle pre-filling
+  const [fullName, setFullName] = useState(profile?.full_name || '')
+  const [timezone, setTimezone] = useState(profile?.timezone || '')
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
+  
+  // Update form fields when profile prop changes
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || '')
+      setTimezone(profile.timezone || '')
+      setAvatarUrl(profile.avatar_url || '')
+    }
+  }, [profile])
+
   return (
-    <div>
-      <form action={formAction} className="flex flex-col gap-2 mt-4">
-        <input 
-          name="full_name" 
-          placeholder="Full name" 
-          required 
-          className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5e8b7e] focus:border-transparent"
-        />
-        <SubmitButton />
-      </form>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-[#5e8b7e]">Edit Profile</CardTitle>
+        <CardDescription>Update your personal information</CardDescription>
+      </CardHeader>
       
-      {state.message && (
-        <p className={`mt-2 text-sm ${state.success ? 'text-green-600' : 'text-red-600'}`}>
-          {state.message}
-        </p>
+      <CardContent>
+        <form action={formAction} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Full Name</Label>
+            <Input 
+              id="full_name"
+              name="full_name" 
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required 
+              className="w-full"
+            />
+            {state.errors?.full_name && (
+              <p className="text-red-500 text-sm mt-1">{state.errors.full_name[0]}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="timezone">Timezone</Label>
+            <Input 
+              id="timezone"
+              name="timezone" 
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              placeholder="e.g. America/New_York" 
+              className="w-full"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="avatar_url">Avatar URL</Label>
+            <Input 
+              id="avatar_url"
+              name="avatar_url" 
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              placeholder="https://example.com/avatar.jpg" 
+              className="w-full"
+            />
+          </div>
+          
+          {state.message && (
+            <div className={`p-3 rounded-md ${state.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+              {state.message}
+            </div>
+          )}
+          
+          <div className="pt-2">
+            <SubmitButton />
+          </div>
+        </form>
+      </CardContent>
+      
+      {profile && profile.created_at && (
+        <CardFooter className="text-xs text-muted-foreground flex flex-col items-start sm:flex-row sm:justify-between">
+          <span>Account created: {new Date(profile.created_at).toLocaleDateString()}</span>
+          {profile.updated_at && profile.updated_at !== profile.created_at && (
+            <span>Last updated: {new Date(profile.updated_at).toLocaleDateString()}</span>
+          )}
+        </CardFooter>
       )}
-    </div>
+    </Card>
   )
 }
+

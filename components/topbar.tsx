@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { ChevronLeft, ChevronRight, Upload, LogOut } from "lucide-react"
+import { ChevronLeft, ChevronRight, Upload, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useStore } from "@/lib/store"
 import { signOut } from "@/app/auth/actions"
+import Link from "next/link"
 
 export function Topbar() {
   // Get state and actions from Zustand store
@@ -131,6 +132,18 @@ export function Topbar() {
               ))}
           </SelectContent>
         </Select>
+        
+        {/* Profile Button */}
+        <Link href="/profile">  
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[#5e8b7e] hover:bg-[#e9f1e7] hover:text-[#5e8b7e]"
+          >
+            <User className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
+        </Link>
         
         {/* Logout Button */}
         <form action={signOut}>

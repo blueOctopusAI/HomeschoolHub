@@ -48,7 +48,7 @@ export async function middleware(request: NextRequest) {
 
   // Define protected routes and auth routes
   // Include the root path in protected routes since it contains profile management functionality
-  const protectedRoutes = ['/', '/dashboard', '/calendar', '/assignments', '/checklist', '/reports', '/transcript', '/settings', '/portfolio', '/compliance'];
+  const protectedRoutes = ['/', '/dashboard', '/calendar', '/assignments', '/checklist', '/reports', '/transcript', '/settings', '/portfolio', '/compliance', '/profile'];
   const authRoutes = ['/login', '/signup'];
   
   // If user is not logged in and trying to access a protected route (including root '/')
