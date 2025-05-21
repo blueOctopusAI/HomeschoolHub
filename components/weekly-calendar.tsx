@@ -102,7 +102,7 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
         subjectName: "",
         subjectColor: "",
         description: "",
-        studentIds: selectedStudent !== "all" ? [selectedStudent] : [],
+        studentIds: selectedStudent !== "all" ? [selectedStudent.toString()] : [],
         startTime: "09:00",
         endTime: "10:00",
         materialsNeeded: "",
@@ -236,9 +236,29 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
   // Get lessons for a specific day - memoize this function
   const getLessonsForDay = useCallback(
     (day: Date) => {
+      // Get mapped student ID
+      const getDbStudentId = () => {
+        // Return 'all' as is
+        if (selectedStudent === 'all') return 'all';
+        
+        // Hardcoded mappings for testing - in real app would be fetched from DB
+        const studentMappings: Record<string, string> = {
+          'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
+          'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
+          'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
+        };
+        
+        return studentMappings[selectedStudent] || selectedStudent;
+      };
+      
+      const dbStudentId = getDbStudentId();
+      
       return lessons.filter((lesson) => {
         const lessonDate = new Date(lesson.startDate)
-        return isSameDay(lessonDate, day) && (selectedStudent === "all" || lesson.studentIds.includes(selectedStudent))
+        // Use the mapped student ID for comparison
+        const isForSelectedStudent = dbStudentId === "all" || lesson.studentIds.includes(dbStudentId)
+        
+        return isSameDay(lessonDate, day) && isForSelectedStudent
       })
     },
     [lessons, selectedStudent],
@@ -284,16 +304,43 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
   )
 
   // Organize lessons by day - memoize this calculation
-  const lessonsByDay = useMemo(() => 
-    daysOfWeek.reduce((acc, day) => {
+  const lessonsByDay = useMemo(() => {
+    // For debugging
+    console.log('Selected student:', selectedStudent);
+    console.log('Lesson sample:', lessons[0]?.studentIds);
+    
+    // Get mappings of student IDs from sidebar and topbar components
+    // This mapping would be shared across components in a real implementation
+    const getDbStudentId = () => {
+      // Return 'all' as is
+      if (selectedStudent === 'all') return 'all';
+      
+      // Hardcoded mappings for testing - in real app would be fetched from DB
+      const studentMappings: Record<string, string> = {
+        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
+        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
+        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
+      };
+      
+      return studentMappings[selectedStudent] || selectedStudent;
+    };
+    
+    const dbStudentId = getDbStudentId();
+    console.log('Mapped DB student ID:', dbStudentId);
+    
+    return daysOfWeek.reduce((acc, day) => {
       const dayKey = format(day, "yyyy-MM-dd")
       acc[dayKey] = lessons.filter((lesson) => {
         const lessonDate = new Date(lesson.startDate)
-        return isSameDay(lessonDate, day) && (selectedStudent === "all" || lesson.studentIds.includes(selectedStudent))
+        // Check if the student ID (or its mapped DB ID) is in the lesson's student list
+        const isForSelectedStudent = dbStudentId === "all" || 
+          lesson.studentIds.includes(dbStudentId);
+        
+        return isSameDay(lessonDate, day) && isForSelectedStudent
       }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       return acc
     }, {} as Record<string, Lesson[]>)
-  , [daysOfWeek, lessons, selectedStudent])
+  }, [daysOfWeek, lessons, selectedStudent])
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
