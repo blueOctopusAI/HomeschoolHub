@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { ChevronLeft, ChevronRight, Upload, LogOut, User } from "lucide-react"
+import { ChevronLeft, ChevronRight, Upload, LogOut, User, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useStore } from "@/lib/store"
 import { signOut } from "@/app/auth/actions"
 import Link from "next/link"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 export function Topbar() {
   // Get state and actions from Zustand store
@@ -22,6 +23,44 @@ export function Topbar() {
   
   const [date, setDate] = useState<Date>(currentDate)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [dbStudentIdMap, setDbStudentIdMap] = useState<{[key: string]: string}>({})
+
+  // Load actual student IDs from database
+  useEffect(() => {
+    const loadStudentIds = async () => {
+      if (students.length > 0) {
+        const supabase = createSupabaseBrowserClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          // Fetch students from database
+          const { data: dbStudents } = await supabase
+            .from('students')
+            .select('id, name')
+            .eq('user_id', user.id)
+          
+          if (dbStudents?.length) {
+            // Create a mapping from store student ID to database student ID
+            const mapping: {[key: string]: string} = {}
+            
+            // Map based on name matching
+            dbStudents.forEach(dbStudent => {
+              const matchingStoreStudent = students.find(s => 
+                s.name.toLowerCase() === dbStudent.name.toLowerCase()
+              )
+              if (matchingStoreStudent) {
+                mapping[matchingStoreStudent.id] = dbStudent.id
+              }
+            })
+            
+            setDbStudentIdMap(mapping)
+          }
+        }
+      }
+    }
+    
+    loadStudentIds()
+  }, [students])
 
   // Simplified handlers
   const handleDateSelect = (selectedDate: Date | undefined) => {
@@ -132,6 +171,15 @@ export function Topbar() {
               ))}
           </SelectContent>
         </Select>
+        
+        {selectedStudent !== "all" && dbStudentIdMap[selectedStudent] && (
+          <Link href={`/student/${dbStudentIdMap[selectedStudent]}`} passHref target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7]">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Student Portal
+            </Button>
+          </Link>
+        )}
         
         {/* Profile Button */}
         <Link href="/profile">  

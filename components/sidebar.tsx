@@ -3,6 +3,7 @@
 import { useStore } from "@/lib/store"
 import { Logo } from "./logo"
 import { cn } from "@/lib/utils"
+import { useState, useEffect } from "react"
 import {
   BookOpen,
   Calendar,
@@ -13,10 +14,13 @@ import {
   Settings,
   Briefcase,
   ClipboardCheck,
+  ExternalLink,
 } from "lucide-react"
 import { type View } from "@/lib/store"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
+import Link from "next/link"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 export function Sidebar() {
   // Get state and actions from Zustand store
@@ -28,6 +32,44 @@ export function Sidebar() {
   
   const router = useRouter()
   const pathname = usePathname()
+  const [dbStudentIdMap, setDbStudentIdMap] = useState<{[key: string]: string}>({})
+  
+  // Load actual student IDs from database
+  useEffect(() => {
+    const loadStudentIds = async () => {
+      if (students.length > 0) {
+        const supabase = createSupabaseBrowserClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          // Fetch students from database
+          const { data: dbStudents } = await supabase
+            .from('students')
+            .select('id, name')
+            .eq('user_id', user.id)
+          
+          if (dbStudents?.length) {
+            // Create a mapping from store student ID to database student ID
+            const mapping: {[key: string]: string} = {}
+            
+            // Map based on name matching
+            dbStudents.forEach(dbStudent => {
+              const matchingStoreStudent = students.find(s => 
+                s.name.toLowerCase() === dbStudent.name.toLowerCase()
+              )
+              if (matchingStoreStudent) {
+                mapping[matchingStoreStudent.id] = dbStudent.id
+              }
+            })
+            
+            setDbStudentIdMap(mapping)
+          }
+        }
+      }
+    }
+    
+    loadStudentIds()
+  }, [students])
   
   // We're removing this effect since MainLayout already handles this
   // This removes duplicate effects that might cause rendering loops
@@ -122,20 +164,50 @@ export function Sidebar() {
           <ul className="mt-2 space-y-1">
             {students.map((student) => (
               <li key={student.id}>
-                <button
-                  onClick={() => setSelectedStudent(student.id)}
-                  className={cn(
-                    "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    selectedStudent === student.id
-                      ? "bg-[#5e8b7e]/10 text-[#5e8b7e]"
-                      : "text-gray-700 hover:bg-[#5e8b7e]/10 hover:text-[#5e8b7e]",
-                  )}
-                >
-                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-xs font-medium">
-                    {student.initials || student.name.charAt(0)}
+                {student.id !== "all" ? (
+                  <div className="flex items-center justify-between w-full px-3 py-2 rounded-md">
+                    <button
+                      onClick={() => setSelectedStudent(student.id)}
+                      className={cn(
+                        "flex items-center flex-1 text-sm font-medium rounded-md transition-colors",
+                        selectedStudent === student.id
+                          ? "text-[#5e8b7e]"
+                          : "text-gray-700 hover:text-[#5e8b7e]",
+                      )}
+                    >
+                      <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-xs font-medium">
+                        {student.initials || student.name.charAt(0)}
+                      </div>
+                      <span className="ml-3 truncate">{student.name}</span>
+                    </button>
+                    {dbStudentIdMap[student.id] && (
+                      <Link 
+                        href={`/student/${dbStudentIdMap[student.id]}`} 
+                        title={`View ${student.name}'s Portal`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-500 hover:text-[#5e8b7e] transition-colors ml-2"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    )}
                   </div>
-                  <span className="ml-3 truncate">{student.name}</span>
-                </button>
+                ) : (
+                  <button
+                    onClick={() => setSelectedStudent(student.id)}
+                    className={cn(
+                      "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      selectedStudent === student.id
+                        ? "bg-[#5e8b7e]/10 text-[#5e8b7e]"
+                        : "text-gray-700 hover:bg-[#5e8b7e]/10 hover:text-[#5e8b7e]",
+                    )}
+                  >
+                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-xs font-medium">
+                      {student.initials || student.name.charAt(0)}
+                    </div>
+                    <span className="ml-3 truncate">{student.name}</span>
+                  </button>
+                )}
               </li>
             ))}
           </ul>
