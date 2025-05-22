@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useStore, type Lesson, type Student } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
-import { createLesson, updateLesson, deleteLesson } from "@/app/calendar/lessons-actions" 
+import { createLesson, updateLesson, deleteLesson } from "@/app/calendar/actions" 
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 

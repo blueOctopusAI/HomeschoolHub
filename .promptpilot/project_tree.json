@@ -31,35 +31,6 @@
         "title": "assignments",
         "children": [
           {
-            "key": "app/assignments/to_be_deleted",
-            "title": "to_be_deleted",
-            "children": [
-              {
-                "key": "app/assignments/to_be_deleted/form-actions.ts",
-                "title": "form-actions.ts",
-                "children": [],
-                "isLeaf": true,
-                "parentKey": "app/assignments/to_be_deleted"
-              },
-              {
-                "key": "app/assignments/to_be_deleted/simple-actions.ts",
-                "title": "simple-actions.ts",
-                "children": [],
-                "isLeaf": true,
-                "parentKey": "app/assignments/to_be_deleted"
-              },
-              {
-                "key": "app/assignments/to_be_deleted/simple-handler.ts",
-                "title": "simple-handler.ts",
-                "children": [],
-                "isLeaf": true,
-                "parentKey": "app/assignments/to_be_deleted"
-              }
-            ],
-            "isLeaf": false,
-            "parentKey": "app/assignments"
-          },
-          {
             "key": "app/assignments/actions.ts",
             "title": "actions.ts",
             "children": [],
@@ -97,6 +68,27 @@
         "title": "calendar",
         "children": [
           {
+            "key": "app/calendar/actions-old.ts",
+            "title": "actions-old.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          },
+          {
+            "key": "app/calendar/actions-temp-deleted.ts",
+            "title": "actions-temp-deleted.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          },
+          {
+            "key": "app/calendar/actions-temp.ts",
+            "title": "actions-temp.ts",
+            "children": [],
+            "isLeaf": true,
+            "parentKey": "app/calendar"
+          },
+          {
             "key": "app/calendar/actions.ts",
             "title": "actions.ts",
             "children": [],
@@ -104,15 +96,15 @@
             "parentKey": "app/calendar"
           },
           {
-            "key": "app/calendar/add-lessons.ts",
-            "title": "add-lessons.ts",
+            "key": "app/calendar/add-lessons-deleted.ts",
+            "title": "add-lessons-deleted.ts",
             "children": [],
             "isLeaf": true,
             "parentKey": "app/calendar"
           },
           {
-            "key": "app/calendar/lessons-actions.ts",
-            "title": "lessons-actions.ts",
+            "key": "app/calendar/add-lessons.ts",
+            "title": "add-lessons.ts",
             "children": [],
             "isLeaf": true,
             "parentKey": "app/calendar"
@@ -1181,6 +1173,13 @@
   {
     "key": "tailwind.config.ts",
     "title": "tailwind.config.ts",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "temp-old-actions.txt",
+    "title": "temp-old-actions.txt",
     "children": [],
     "isLeaf": true,
     "parentKey": null

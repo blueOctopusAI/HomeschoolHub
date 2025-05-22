@@ -9,7 +9,7 @@ import { LessonModal } from "./lesson-modal"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
 import { useRouter } from "next/navigation"
-import { deleteLesson, toggleLessonComplete } from "@/app/calendar/lessons-actions"
+import { deleteLesson, toggleLessonComplete } from "@/app/calendar/actions"
 
 // Colors from the flower logo
 const logoColors = {
