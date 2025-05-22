@@ -815,8 +815,8 @@
         "parentKey": "components"
       },
       {
-        "key": "components/dashboard-view-new.tsx",
-        "title": "dashboard-view-new.tsx",
+        "key": "components/dashboard-view-OLD-DELETED.tsx",
+        "title": "dashboard-view-OLD-DELETED.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
@@ -824,6 +824,13 @@
       {
         "key": "components/dashboard-view.tsx",
         "title": "dashboard-view.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/data-sync-initializer-DELETED.tsx",
+        "title": "data-sync-initializer-DELETED.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
@@ -880,6 +887,13 @@
       {
         "key": "components/logo.tsx",
         "title": "logo.tsx",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "components"
+      },
+      {
+        "key": "components/main-layout-DELETED.tsx",
+        "title": "main-layout-DELETED.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"

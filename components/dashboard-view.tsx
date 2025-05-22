@@ -1,141 +1,62 @@
 "use client"
 
 import { memo, useMemo } from "react"
-import { useStore, type Student, type Lesson, type Course, type Assignment } from "@/lib/store"
-import { format, addDays, isWithinInterval } from "date-fns"
+import { useStore } from "@/lib/store"
+import { format, addDays } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { CalendarDays, BookOpen, CheckSquare, GraduationCap } from "lucide-react"
+import { CalendarDays, BookOpen, CheckSquare, GraduationCap, Loader2 } from "lucide-react"
+import { useDataOperations } from "@/lib/hooks/use-data-operations"
+import { 
+  useTodaysLessonsData, 
+  useUpcomingAssignmentsData, 
+  useStudentCoursesData, 
+  useStudentsData 
+} from "@/lib/hooks/use-supabase-data"
 
 export const DashboardView = memo(function DashboardView() {
-  // Get data from Zustand store using individual selectors
-  const students = useStore((state) => state.students)
-  const lessons = useStore((state) => state.lessons)
-  const courses = useStore((state) => state.courses)
-  const assignments = useStore((state) => state.assignments)
+  // Get minimal state from Zustand store
   const currentDate = useStore((state) => state.currentDate)
   const selectedStudent = useStore((state) => state.selectedStudent)
+  
+  // Use our data loading hooks
+  const { data: students, loading: loadingStudents } = useStudentsData()
+  const { data: todaysLessons, loading: loadingLessons, error: lessonError } = useTodaysLessonsData(selectedStudent, currentDate)
+  
+  // Calculate the date range for upcoming assignments (next 7 days)
+  const nextWeek = addDays(currentDate, 7)
+  const { data: upcomingAssignments, loading: loadingAssignments } = useUpcomingAssignmentsData(
+    selectedStudent, 
+    currentDate, 
+    nextWeek
+  )
+  
+  // Get courses for the selected student (for GPA calculation)
+  const { data: studentCourses, loading: loadingCourses } = useStudentCoursesData(selectedStudent)
+  
+  const { toggleLessonComplete } = useDataOperations()
 
   // Get selected student name
   const student = useMemo(() => {
-    return selectedStudent === "all"
-      ? { name: "All Students", gradeLevel: "" }
-      : students.find((s) => s.id === selectedStudent) || { name: "All Students", gradeLevel: "" }
+    if (selectedStudent === "all") return { name: "All Students", gradeLevel: "" }
+    
+    if (!students) return { name: "Loading...", gradeLevel: "" }
+    
+    const foundStudent = students.find(s => s.id === selectedStudent)
+    return foundStudent 
+      ? { name: foundStudent.name, gradeLevel: foundStudent.grade || "" }
+      : { name: "All Students", gradeLevel: "" }
   }, [selectedStudent, students])
-
-  // Get today's day of the week
-  const today = useMemo(() => {
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    return days[currentDate.getDay()]
-  }, [currentDate])
-
-  // Filter lessons for today based on selected student and current date
-  const todaysLessons = useMemo(() => {
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
-    console.log('Dashboard: Selected student mapping', selectedStudent, '->', dbStudentId);
-    
-    // Get today's date in the format the database uses
-    const todayDate = new Date();
-    const todayStr = format(todayDate, 'yyyy-MM-dd');
-    console.log('Looking for lessons on date:', todayStr);
-    
-    // Use the formatted date to find lessons for today
-    return lessons.filter((lesson) => {
-      // Check if this lesson is for the selected student
-      const isForSelectedStudent = dbStudentId === 'all' || 
-                                 lesson.studentIds.includes(dbStudentId);
-      
-      // Check if this lesson is scheduled for today's date
-      const lessonDate = new Date(lesson.startDate);
-      const lessonDateStr = format(lessonDate, 'yyyy-MM-dd');
-      const isForToday = lessonDateStr === todayStr;
-      
-      console.log(
-        `Lesson ${lesson.id} (${lesson.subjectName}) - ` + 
-        `Date: ${lessonDateStr}, For student: ${isForSelectedStudent}, ` +
-        `Today: ${isForToday}, Student IDs: [${lesson.studentIds}]`
-      );
-      
-      return isForSelectedStudent && isForToday;
-    });
-  }, [lessons, selectedStudent, currentDate])
-
-  // Filter assignments due in the next 7 days
-  const upcomingAssignments = useMemo(() => {
-    const nextWeek = addDays(currentDate, 7)
-    
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
-
-    return assignments
-      .filter((assignment) => {
-        const isForSelectedStudent = dbStudentId === "all" || assignment.studentIds.includes(dbStudentId)
-        const dueDate = new Date(assignment.dueDate)
-        const isDueSoon = isWithinInterval(dueDate, { start: currentDate, end: nextWeek })
-
-        return isForSelectedStudent && isDueSoon
-      })
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-  }, [assignments, selectedStudent, currentDate])
 
   // Calculate weekly progress
   const weeklyProgress = useMemo(() => {
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
+    if (!todaysLessons) {
+      return { total: 0, completed: 0, percentage: 0 }
+    }
     
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
-    
-    const filteredLessons = lessons.filter((lesson) => {
-      return dbStudentId === "all" || lesson.studentIds.includes(dbStudentId)
-    })
-
-    const totalLessons = filteredLessons.length
-    const completedLessons = filteredLessons.filter((lesson) => lesson.completed).length
+    const totalLessons = todaysLessons.length
+    const completedLessons = todaysLessons.filter(lesson => lesson.completed).length
     const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
     return {
@@ -143,29 +64,13 @@ export const DashboardView = memo(function DashboardView() {
       completed: completedLessons,
       percentage: progressPercentage,
     }
-  }, [lessons, selectedStudent])
+  }, [todaysLessons])
 
   // Calculate GPA if available
   const gpaData = useMemo(() => {
-    if (selectedStudent === "all") return null
-    
-    // Create student ID mapping function
-    const getDbStudentId = () => {
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    // Map the selected student ID to database ID
-    const dbStudentId = getDbStudentId();
-
-    const studentCourses = courses.filter((course) => course.studentId === dbStudentId)
-    if (studentCourses.length === 0) return null
+    if (selectedStudent === "all" || !studentCourses || studentCourses.length === 0) {
+      return null
+    }
 
     const gradePoints: Record<string, number> = {
       "A+": 4.0,
@@ -186,10 +91,10 @@ export const DashboardView = memo(function DashboardView() {
     let totalPoints = 0
     let totalCredits = 0
 
-    studentCourses.forEach((course) => {
-      const points = gradePoints[course.grade] || 0
-      totalPoints += points * course.credits
-      totalCredits += course.credits
+    studentCourses.forEach(course => {
+      const points = gradePoints[course.grade as keyof typeof gradePoints] || 0
+      totalPoints += points * (course.credits || 1)
+      totalCredits += (course.credits || 1)
     })
 
     const gpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "N/A"
@@ -198,7 +103,38 @@ export const DashboardView = memo(function DashboardView() {
       gpa,
       courses: studentCourses.length,
     }
-  }, [courses, selectedStudent])
+  }, [studentCourses, selectedStudent])
+
+  // Handle toggling a lesson's completion status
+  const handleToggleCompletion = async (lessonId: string) => {
+    try {
+      await toggleLessonComplete(lessonId)
+    } catch (error) {
+      console.error("Failed to toggle lesson completion:", error)
+    }
+  }
+  
+  // Loading state
+  const isLoading = loadingStudents || loadingLessons || loadingAssignments || loadingCourses
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[70vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#5e8b7e] mx-auto mb-4" />
+          <p className="text-[#5e8b7e]">Loading dashboard data...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  // Debug info
+  console.log('Dashboard data loaded:', {
+    selectedStudent,
+    lessonsCount: todaysLessons?.length || 0,
+    assignmentsCount: upcomingAssignments?.length || 0,
+    lessonError
+  })
 
   return (
     <div className="p-6 space-y-6">
@@ -219,22 +155,24 @@ export const DashboardView = memo(function DashboardView() {
             <p className="text-sm text-[#5e8b7e]/70">{format(currentDate, "EEEE, MMMM d")}</p>
           </CardHeader>
           <CardContent>
-            {todaysLessons.length > 0 ? (
+            {todaysLessons && todaysLessons.length > 0 ? (
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {todaysLessons.map((lesson) => (
                   <div key={lesson.id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
                     <div className="flex flex-col h-full justify-between">
                       <div>
-                        <div className="font-medium text-[#5e8b7e]">{lesson.subjectName}</div>
+                        <div className="font-medium text-[#5e8b7e]">{lesson.subject_name}</div>
                         <div className="text-sm text-gray-500">
-                          {new Date(lesson.startDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -
-                          {new Date(lesson.endDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {new Date(lesson.start_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -
+                          {new Date(lesson.end_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </div>
                         {lesson.description && <div className="text-sm mt-1">{lesson.description}</div>}
                       </div>
                       <Badge
                         variant="outline"
                         className={`mt-2 w-fit ${lesson.completed ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                        onClick={() => handleToggleCompletion(lesson.id)}
+                        style={{ cursor: 'pointer' }}
                       >
                         {lesson.completed ? "Completed" : "Pending"}
                       </Badge>
@@ -261,7 +199,7 @@ export const DashboardView = memo(function DashboardView() {
             <p className="text-sm text-[#5e8b7e]/70">Due in the next 7 days</p>
           </CardHeader>
           <CardContent>
-            {upcomingAssignments.length > 0 ? (
+            {upcomingAssignments && upcomingAssignments.length > 0 ? (
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {upcomingAssignments.map((assignment) => (
                   <div key={assignment.id} className="p-3 bg-gray-50 rounded-md border border-gray-100">
@@ -269,7 +207,7 @@ export const DashboardView = memo(function DashboardView() {
                       <div>
                         <div className="font-medium text-[#5e8b7e]">{assignment.title}</div>
                         <div className="text-sm text-gray-500">
-                          Due: {format(new Date(assignment.dueDate), "MMM d, yyyy")}
+                          Due: {format(new Date(assignment.due_date), "MMM d, yyyy")}
                         </div>
                         {assignment.description && (
                           <div className="text-sm mt-1 line-clamp-2">{assignment.description}</div>
@@ -320,11 +258,15 @@ export const DashboardView = memo(function DashboardView() {
               {/* Additional stats */}
               <div className="grid grid-cols-2 gap-4 h-fit">
                 <div className="bg-gray-50 p-3 rounded-md text-center">
-                  <div className="text-2xl font-semibold text-[#5e8b7e]">{todaysLessons.length}</div>
+                  <div className="text-2xl font-semibold text-[#5e8b7e]">
+                    {todaysLessons ? todaysLessons.length : 0}
+                  </div>
                   <div className="text-xs text-gray-500">Today's Lessons</div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-md text-center">
-                  <div className="text-2xl font-semibold text-[#5e8b7e]">{upcomingAssignments.length}</div>
+                  <div className="text-2xl font-semibold text-[#5e8b7e]">
+                    {upcomingAssignments ? upcomingAssignments.length : 0}
+                  </div>
                   <div className="text-xs text-gray-500">Due Soon</div>
                 </div>
               </div>
