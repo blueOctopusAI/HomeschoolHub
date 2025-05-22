@@ -3,6 +3,9 @@ import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { type Lesson, type Student } from "@/lib/store"
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 export default async function CalendarPage() {
   try {
     // Create Supabase client

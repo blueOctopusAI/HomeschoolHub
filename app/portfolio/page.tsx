@@ -3,6 +3,9 @@ import { PortfolioBuilderView } from "@/components/portfolio-builder-view"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { Student } from "@/lib/store"
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 export default async function PortfolioPage() {
   try {
     // Create Supabase server client

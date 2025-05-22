@@ -1055,6 +1055,13 @@
         "parentKey": "public"
       },
       {
+        "key": "public/favicon.ico",
+        "title": "favicon.ico",
+        "children": [],
+        "isLeaf": true,
+        "parentKey": "public"
+      },
+      {
         "key": "public/homeschool-hub-logo.png",
         "title": "homeschool-hub-logo.png",
         "children": [],
@@ -1075,6 +1082,20 @@
   {
     "key": "components.json",
     "title": "components.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "DATA_MODEL.md",
+    "title": "DATA_MODEL.md",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "FEATURES_OVERVIEW.md",
+    "title": "FEATURES_OVERVIEW.md",
     "children": [],
     "isLeaf": true,
     "parentKey": null
@@ -1129,6 +1150,13 @@
     "parentKey": null
   },
   {
+    "key": "SERVER_ACTIONS_OVERVIEW.md",
+    "title": "SERVER_ACTIONS_OVERVIEW.md",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
     "key": "tailwind.config.ts",
     "title": "tailwind.config.ts",
     "children": [],
@@ -1145,6 +1173,13 @@
   {
     "key": "tsconfig.json",
     "title": "tsconfig.json",
+    "children": [],
+    "isLeaf": true,
+    "parentKey": null
+  },
+  {
+    "key": "ZUSTAND_STORE.md",
+    "title": "ZUSTAND_STORE.md",
     "children": [],
     "isLeaf": true,
     "parentKey": null

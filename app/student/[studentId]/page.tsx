@@ -5,6 +5,9 @@ import StudentPortalLayout from "@/components/student-portal-layout";
 import StudentChecklistWithActions from "@/components/student-checklist-with-actions";
 import StudentAssignmentActions from "@/components/student-assignment-actions";
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 interface StudentPortalPageProps {
   params: {
     studentId: string;

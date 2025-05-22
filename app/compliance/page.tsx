@@ -5,6 +5,9 @@ import { Student } from "@/lib/store"
 import { LoggedHour } from "@/lib/types"
 import { ReadonlyURLSearchParams } from "next/navigation"
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 export default async function CompliancePage() {
   try {
     // Create Supabase server client

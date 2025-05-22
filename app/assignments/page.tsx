@@ -3,6 +3,9 @@ import { AssignmentsView } from "@/components/assignments-view"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { Assignment, Student, Course } from "@/lib/store"
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 export default async function AssignmentsPage() {
   
   try {

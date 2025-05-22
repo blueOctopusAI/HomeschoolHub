@@ -3,6 +3,9 @@ import { ProgressReportView } from "@/components/progress-report-view"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { Student } from "@/lib/store"
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 export default async function ReportsPage() {
   try {
     // Create Supabase server client

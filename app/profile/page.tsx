@@ -2,6 +2,9 @@ import { ProfileForm } from "@/components/profile-form"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage() {
   // Get the current session server-side
   const supabase = await createSupabaseServerComponentClient()

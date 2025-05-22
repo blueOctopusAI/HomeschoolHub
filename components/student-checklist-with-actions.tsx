@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { CheckCircle, Circle, Loader2 } from "lucide-react";
 import { useTransition, useState } from "react";
-import { toggleLessonComplete } from "@/app/calendar/lessons-actions";
+import { toggleLessonComplete } from "@/app/calendar/actions";
 import { useRouter } from "next/navigation";
 
 // Define Lesson type based on the database schema
