@@ -41,7 +41,6 @@ export async function markMultipleLessonsComplete(formData: FormData): Promise<A
     
     // Ensure formData exists
     if (!formData) {
-      console.error("FormData is undefined");
       return {
         success: false,
         message: "No form data provided."
@@ -54,14 +53,12 @@ export async function markMultipleLessonsComplete(formData: FormData): Promise<A
       currentDateISO: formData.get('currentDateISO')?.toString() || '',
       datePeriodType: formData.get('datePeriodType')?.toString() || '',
     }
-    
-    console.log("Form values:", formValues);
+
     
     // Validate the data
     const validationResult = markMultipleLessonsSchema.safeParse(formValues)
     
     if (!validationResult.success) {
-      console.error("Validation errors:", validationResult.error.flatten());
       const errors = validationResult.error.flatten().fieldErrors
       return {
         success: false,
@@ -143,8 +140,7 @@ export async function markMultipleLessonsComplete(formData: FormData): Promise<A
       }
     }
 
-    // Log the result for debugging
-    console.log(`Successfully marked ${count || 0} lessons as complete`);
+
     
     // Revalidate the checklist page
     revalidatePath('/checklist')

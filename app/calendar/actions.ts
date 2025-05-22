@@ -333,7 +333,6 @@ export async function createLesson(
     const validationResult = lessonSchema.safeParse(lessonData)
     
     if (!validationResult.success) {
-      console.error("Validation errors:", validationResult.error.flatten());
       const errors = validationResult.error.flatten().fieldErrors
       return {
         success: false,
@@ -470,7 +469,6 @@ export async function updateLesson(
     // Extract lesson ID
     const lessonId = formData.get('lessonId')?.toString()
     if (!lessonId) {
-      console.error("Missing lessonId in formData")
       return {
         success: false,
         message: "Lesson ID is required.",
@@ -478,12 +476,6 @@ export async function updateLesson(
           lessonId: ["Lesson ID is required."]
         }
       }
-    }
-    
-    // Log incoming formData entries for debugging
-    console.log("Received form data for update:")
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`)
     }
     
     // Extract lesson fields from form data
@@ -500,14 +492,10 @@ export async function updateLesson(
       dayOfWeek: formData.get('dayOfWeek')?.toString() || '',
     }
     
-    // Log extracted data for debugging
-    console.log("Extracted lesson data:", lessonData)
-    
     // Validate the lesson data
     const validationResult = lessonSchema.safeParse(lessonData)
     
     if (!validationResult.success) {
-      console.error("Update validation errors:", validationResult.error.flatten());
       const errors = validationResult.error.flatten().fieldErrors
       return {
         success: false,
@@ -555,7 +543,6 @@ export async function updateLesson(
       .single()
     
     if (existingError || !existingLesson) {
-      console.error("Error fetching lesson:", existingError)
       return {
         success: false,
         message: "Lesson not found or not authorized to update."

@@ -37,12 +37,9 @@ export async function logHours(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    console.log('Starting logHours server action')
     const supabase = await createSupabaseServerActionClient()
-    console.log('Supabase client created')
     
     if (!supabase || !supabase.auth) {
-      console.error('Invalid Supabase client:', supabase)
       return {
         success: false,
         message: 'Authentication service is unavailable',
@@ -149,12 +146,9 @@ export async function deleteLoggedHours(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    console.log('Starting deleteLoggedHours server action')
     const supabase = await createSupabaseServerActionClient()
-    console.log('Supabase client created for delete action')
     
     if (!supabase || !supabase.auth) {
-      console.error('Invalid Supabase client in delete action:', supabase)
       return {
         success: false,
         message: 'Authentication service is unavailable',

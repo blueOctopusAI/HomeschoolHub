@@ -4,12 +4,10 @@ import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { Assignment, Student, Course } from "@/lib/store"
 
 export default async function AssignmentsPage() {
-  console.log("AssignmentsPage component is rendering");
   
   try {
     // Create Supabase server client
     const supabase = await createSupabaseServerComponentClient()
-    console.log("Supabase client created successfully");
     
     // Fetch the current authenticated user
     const { data, error: userError } = await supabase.auth.getUser()
@@ -20,24 +18,14 @@ export default async function AssignmentsPage() {
     }
     
     const user = data.user;
-    console.log("Current authenticated user:", user?.id, user?.email);
     
     // If no user is authenticated, redirect to login
     if (!user) {
-      console.log("No authenticated user, redirecting to login");
       redirect('/login');
     }
     
-    // Try fetching all assignments without filtering by user_id to debug
-    const { data: allAssignments, error: allAssignmentsError } = await supabase
-      .from('assignments')
-      .select('*')
-      .limit(10);
-    
-    console.log("All assignments (first 10):", allAssignments);
-    console.log("All assignments error:", allAssignmentsError);
-    
-    // Now fetch assignments for the authenticated user
+
+    // Fetch assignments for the authenticated user
     const { data: assignmentsWithStudents, error: assignmentsError } = await supabase
       .from('assignments')
       .select(`
@@ -48,32 +36,15 @@ export default async function AssignmentsPage() {
       `)
       .eq('user_id', user.id);
     
-    console.log("Assignments for user:", assignmentsWithStudents);
-    console.log("Assignments error:", assignmentsError);
-    
     if (assignmentsError) {
       console.error("Error fetching assignments:", assignmentsError);
     }
-    
-    // Test query for specific user we know has data
-    const testUserId = 'f09f3943-4e2e-450a-a73d-ed5e12c883e6';
-    const { data: testUserAssignments, error: testError } = await supabase
-      .from('assignments')
-      .select('*')
-      .eq('user_id', testUserId)
-      .limit(10);
-    
-    console.log(`Assignments for test user (${testUserId}):`, testUserAssignments);
-    console.log("Test query error:", testError);
     
     // Fetch students for the authenticated user
     const { data: userStudents, error: studentsError } = await supabase
       .from('students')
       .select('*')
       .eq('user_id', user.id);
-    
-    console.log("Students for user:", userStudents);
-    console.log("Students error:", studentsError);
     
     if (studentsError) {
       console.error("Error fetching students:", studentsError);
@@ -85,9 +56,6 @@ export default async function AssignmentsPage() {
       .select('*')
       .eq('user_id', user.id);
     
-    console.log("Courses for user:", userCourses);
-    console.log("Courses error:", coursesError);
-    
     if (coursesError) {
       console.error("Error fetching courses:", coursesError);
     }
@@ -98,8 +66,6 @@ export default async function AssignmentsPage() {
       const studentIds = assignment.assignment_students?.map(
         (relation: { student_id: string }) => relation.student_id
       ) || [];
-      
-      console.log(`Assignment ${assignment.id} student IDs:`, studentIds);
       
       // Create a new assignment object with the correct structure
       return {
@@ -114,8 +80,6 @@ export default async function AssignmentsPage() {
         courseId: assignment.course_id
       } as Assignment;
     }) || [];
-    
-    console.log("Final transformed assignments:", transformedAssignments);
     
     return (
       <AssignmentsView 

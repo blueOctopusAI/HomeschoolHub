@@ -72,15 +72,13 @@ export async function createCourse(
       academicYear: formData.get('academicYear')?.toString() || undefined,
     }
     
-    // Log the form data for debugging
-    console.log("Form data received:", courseData);
+
     
     // Validate the course data
     const validationResult = courseSchema.safeParse(courseData)
     
     if (!validationResult.success) {
       const errors = validationResult.error.flatten().fieldErrors
-      console.error("Validation errors:", errors);
       return {
         success: false,
         message: "Please correct the errors below.",
@@ -97,7 +95,6 @@ export async function createCourse(
       .single()
     
     if (studentError || !studentData) {
-      console.error("Error verifying student ownership:", studentError)
       return {
         success: false,
         message: "You can only create courses for students that belong to you.",

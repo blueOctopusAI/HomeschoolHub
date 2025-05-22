@@ -127,14 +127,6 @@ export const DashboardView = memo(function DashboardView() {
       </div>
     )
   }
-  
-  // Debug info
-  console.log('Dashboard data loaded:', {
-    selectedStudent,
-    lessonsCount: todaysLessons?.length || 0,
-    assignmentsCount: upcomingAssignments?.length || 0,
-    lessonError
-  })
 
   return (
     <div className="p-6 space-y-6">

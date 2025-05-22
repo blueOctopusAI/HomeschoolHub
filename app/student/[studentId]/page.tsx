@@ -41,10 +41,9 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
   const tomorrow = new Date(new Date(today)); // Clone the date properly
   tomorrow.setDate(today.getDate() + 1); // Start of tomorrow
 
-  console.log(`Fetching lessons for student ${student.id} (${student.name}) between ${today.toISOString()} and ${tomorrow.toISOString()}`);
 
-  // Debug info
-  console.log(`StudentID: ${student.id}, UserID: ${user.id}`);
+
+
 
   // First get the lesson_ids for this student using lesson_students table
   const { data: studentLessons, error: studentLessonsError } = await supabase
@@ -52,16 +51,13 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
     .select("lesson_id")
     .eq("student_id", student.id);
 
-  // Log any errors or the result
+  // Log any errors
   if (studentLessonsError) {
     console.error("Error fetching student lessons:", studentLessonsError);
-  } else {
-    console.log(`Found ${studentLessons?.length || 0} lessons associated with student`);
   }
     
   // Get array of lesson IDs
   const lessonIds = studentLessons ? studentLessons.map(sl => sl.lesson_id) : [];
-  console.log("Lesson IDs:", lessonIds);
 
   // If no lessons are associated with this student, try fetching all lessons for today
   let todaysLessons = [];
@@ -98,8 +94,7 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
     
     todaysLessons = todaysFilteredLessons.length > 0 ? todaysFilteredLessons : data || [];
     lessonsError = error;
-    
-    console.log(`Found ${todaysLessons.length} lessons (${todaysFilteredLessons.length} for today)`);
+
   } else {
     // If no lesson IDs found, fetch all lessons for today
     const { data, error } = await supabase
@@ -123,8 +118,7 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
     
     todaysLessons = data || [];
     lessonsError = error;
-    
-    console.log(`Found ${todaysLessons.length} lessons for today using date range`);
+
   }
 
   // Handle any errors in lesson fetching
@@ -133,7 +127,6 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
   }
 
   // Fetch upcoming assignments for the student
-  console.log("Fetching upcoming assignments for student:", student.id);
 
   // Get assignments associated with this student
   const { data: studentAssignments, error: studentAssignmentsError } = await supabase
@@ -147,7 +140,6 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
 
   // Get array of assignment IDs
   const assignmentIds = studentAssignments ? studentAssignments.map(sa => sa.assignment_id) : [];
-  console.log("Assignment IDs:", assignmentIds);
 
   // Fetch assignments with these IDs
   let upcomingAssignments = [];
@@ -174,8 +166,7 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
     
     upcomingAssignments = data || [];
     assignmentsError = error;
-    
-    console.log(`Found ${upcomingAssignments.length} upcoming assignments`);
+
   }
 
   // Handle any errors in assignment fetching
