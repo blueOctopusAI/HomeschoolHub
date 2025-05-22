@@ -1055,50 +1055,8 @@
         "parentKey": "public"
       },
       {
-        "key": "public/diverse-students-studying.png",
-        "title": "diverse-students-studying.png",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "public"
-      },
-      {
         "key": "public/homeschool-hub-logo.png",
         "title": "homeschool-hub-logo.png",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "public"
-      },
-      {
-        "key": "public/placeholder-logo.png",
-        "title": "placeholder-logo.png",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "public"
-      },
-      {
-        "key": "public/placeholder-logo.svg",
-        "title": "placeholder-logo.svg",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "public"
-      },
-      {
-        "key": "public/placeholder-user.jpg",
-        "title": "placeholder-user.jpg",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "public"
-      },
-      {
-        "key": "public/placeholder.jpg",
-        "title": "placeholder.jpg",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "public"
-      },
-      {
-        "key": "public/placeholder.svg",
-        "title": "placeholder.svg",
         "children": [],
         "isLeaf": true,
         "parentKey": "public"
