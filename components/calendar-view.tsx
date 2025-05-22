@@ -73,24 +73,6 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
 
   // Filter lessons based on selected student and current week - memoize this calculation
   const filteredLessons = useMemo(() => {
-    // Get mappings of student IDs from sidebar and topbar components
-    const getDbStudentId = () => {
-      // Return 'all' as is
-      if (selectedStudent === 'all') return 'all';
-      
-      // Hardcoded mappings for testing - in real app would be fetched from DB
-      const studentMappings: Record<string, string> = {
-        'student1': 'bb0c2d70-4553-4c25-95f1-d4dbf38ec202', // Emma Johnson
-        'student2': '9948fed0-2182-43a2-b186-1331b083eecd', // Noah Williams
-        'student3': '57b063a8-fb4e-4421-bc15-7399601c7dc1'  // Olivia Davis
-      };
-      
-      return studentMappings[selectedStudent] || selectedStudent;
-    };
-    
-    const dbStudentId = getDbStudentId();
-    console.log('Calendar view - Mapped DB student ID:', dbStudentId);
-    
     return lessons.filter((lesson) => {
       // Parse the lesson date
       const lessonDate = parseISO(lesson.startDate)
@@ -98,8 +80,8 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
       // Check if the lesson is in the current week
       const isInCurrentWeek = daysOfWeek.some((day) => isSameDay(day, lessonDate))
 
-      // Check if the lesson is for the selected student using the mapped DB ID
-      const isForSelectedStudent = dbStudentId === "all" || lesson.studentIds.includes(dbStudentId)
+      // Check if the lesson is for the selected student using the actual database UUID
+      const isForSelectedStudent = selectedStudent === "all" || lesson.studentIds.includes(selectedStudent)
 
       return isInCurrentWeek && isForSelectedStudent
     })

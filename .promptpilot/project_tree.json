@@ -815,22 +815,8 @@
         "parentKey": "components"
       },
       {
-        "key": "components/dashboard-view-OLD-DELETED.tsx",
-        "title": "dashboard-view-OLD-DELETED.tsx",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "components"
-      },
-      {
         "key": "components/dashboard-view.tsx",
         "title": "dashboard-view.tsx",
-        "children": [],
-        "isLeaf": true,
-        "parentKey": "components"
-      },
-      {
-        "key": "components/data-sync-initializer-DELETED.tsx",
-        "title": "data-sync-initializer-DELETED.tsx",
         "children": [],
         "isLeaf": true,
         "parentKey": "components"
