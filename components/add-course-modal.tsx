@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { createCourse } from "@/app/courses/actions"
 import { useToast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 interface AddCourseModalProps {
   isOpen: boolean
@@ -122,6 +124,18 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
   // Handle form submission
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
+    
+    // Log form data before submission for debugging
+    console.log('Submitting form with data:', {
+      studentId: formData.get('studentId'),
+      name: formData.get('name'),
+      category: formData.get('category'),
+      term: formData.get('term'),
+      grade: formData.get('grade'),
+      credits: formData.get('credits'),
+      academicYear: formData.get('academicYear'),
+    })
+    
     try {
       await formAction(formData)
     } catch (error) {
@@ -129,6 +143,9 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
       setIsSubmitting(false)
     }
   }
+
+  // Check if there are any field errors
+  const hasFieldErrors = state?.errors && Object.keys(state.errors).length > 0
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -140,14 +157,26 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
           </DialogDescription>
         </DialogHeader>
 
+        {/* Enhanced error display */}
         {state?.message && (
-          <div
-            className={`p-3 rounded-md text-sm ${
-              state.success ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-            }`}
-          >
-            {state.message}
-          </div>
+          <Alert variant={state.success ? "default" : "destructive"}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {state.message}
+              {hasFieldErrors && (
+                <div className="mt-2 text-xs">
+                  <strong>Field errors:</strong>
+                  <ul className="list-disc pl-5 mt-1">
+                    {Object.entries(state.errors || {}).map(([field, errors]) => (
+                      <li key={field}>
+                        <strong>{field}:</strong> {Array.isArray(errors) ? errors.join(', ') : String(errors)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </AlertDescription>
+          </Alert>
         )}
 
         <form action={handleSubmit} className="grid gap-4 py-4">
@@ -168,7 +197,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
                 state?.errors?.name ? "border-red-500" : ""
               }`}
             />
-            {state?.errors?.name && <p className="text-red-500 text-xs mt-1">{state.errors.name[0]}</p>}
+            {state?.errors?.name && <p className="text-red-500 text-xs mt-1">{Array.isArray(state.errors.name) ? state.errors.name[0] : state.errors.name}</p>}
           </div>
 
           <div className="grid gap-2">
@@ -192,7 +221,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
                 ))}
               </SelectContent>
             </Select>
-            {state?.errors?.category && <p className="text-red-500 text-xs mt-1">{state.errors.category[0]}</p>}
+            {state?.errors?.category && <p className="text-red-500 text-xs mt-1">{Array.isArray(state.errors.category) ? state.errors.category[0] : state.errors.category}</p>}
           </div>
 
           <div className="grid gap-2">
@@ -217,7 +246,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
               </SelectContent>
             </Select>
             {state?.errors?.academicYear && (
-              <p className="text-red-500 text-xs mt-1">{state.errors.academicYear[0]}</p>
+              <p className="text-red-500 text-xs mt-1">{Array.isArray(state.errors.academicYear) ? state.errors.academicYear[0] : state.errors.academicYear}</p>
             )}
           </div>
 
@@ -242,7 +271,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
                 ))}
               </SelectContent>
             </Select>
-            {state?.errors?.term && <p className="text-red-500 text-xs mt-1">{state.errors.term[0]}</p>}
+            {state?.errors?.term && <p className="text-red-500 text-xs mt-1">{Array.isArray(state.errors.term) ? state.errors.term[0] : state.errors.term}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -267,7 +296,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
                   ))}
                 </SelectContent>
               </Select>
-              {state?.errors?.grade && <p className="text-red-500 text-xs mt-1">{state.errors.grade[0]}</p>}
+              {state?.errors?.grade && <p className="text-red-500 text-xs mt-1">{Array.isArray(state.errors.grade) ? state.errors.grade[0] : state.errors.grade}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -287,7 +316,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
                   state?.errors?.credits ? "border-red-500" : ""
                 }`}
               />
-              {state?.errors?.credits && <p className="text-red-500 text-xs mt-1">{state.errors.credits[0]}</p>}
+              {state?.errors?.credits && <p className="text-red-500 text-xs mt-1">{Array.isArray(state.errors.credits) ? state.errors.credits[0] : state.errors.credits}</p>}
             </div>
           </div>
 

@@ -92,7 +92,7 @@ export function Sidebar() {
       value: "calendar",
     },
     {
-      name: "Assignments",
+      name: "Assignments/Lessons",
       icon: <BookOpen className="h-5 w-5" />,
       value: "assignments",
     },

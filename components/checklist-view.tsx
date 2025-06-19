@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns"
-import { useStore, type Lesson, type Student } from "@/lib/store"
-import { Check, Calendar, BookOpen, CheckSquare, CheckCircle } from "lucide-react"
+import { useStore, type Lesson, type Student, type Assignment } from "@/lib/store"
+import { Check, Calendar, BookOpen, CheckSquare, CheckCircle, FileText, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -13,14 +13,30 @@ import { markMultipleLessonsComplete } from "@/app/checklist/actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 
+// Combined type for checklist items
+type ChecklistItem = {
+  id: string
+  type: "lesson" | "assignment"
+  title: string
+  startDate?: string
+  endDate?: string
+  dueDate?: string
+  completed: boolean
+  studentIds: string[]
+  description?: string
+  data: Lesson | Assignment
+}
+
 export function ChecklistView() {
   const router = useRouter();
   // Get data from Zustand store
   const lessons = useStore((state) => state.lessons)
+  const assignments = useStore((state) => state.assignments)
   const students = useStore((state) => state.students)
   const selectedStudent = useStore((state) => state.selectedStudent)
   const currentDate = useStore((state) => state.currentDate)
   const toggleLessonComplete = useStore((state) => state.toggleLessonComplete)
+  const updateAssignment = useStore((state) => state.updateAssignment)
   const markAllLessonsComplete = useStore((state) => state.markAllLessonsComplete)
 
   // Local state
@@ -55,43 +71,89 @@ export function ChecklistView() {
   }, [selectedStudent, students])
 
   // Get the start and end of the week
-  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]) // Start on Monday
-  const weekEnd = useMemo(() => endOfWeek(weekStart, { weekStartsOn: 1 }), [weekStart]) // End on Sunday (but we'll only show Mon-Fri)
+  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate])
+  const weekEnd = useMemo(() => endOfWeek(weekStart, { weekStartsOn: 1 }), [weekStart])
 
-  // Filter lessons for the selected student and current week
-  const filteredLessons = useMemo(() => {
-    return lessons.filter((lesson) => {
-      const lessonDate = new Date(lesson.startDate)
-      const isInWeek = lessonDate >= weekStart && lessonDate <= weekEnd
-      const isForSelectedStudent = selectedStudent === "all" || lesson.studentIds.includes(selectedStudent)
+  // Combine lessons and assignments into checklist items
+  const allChecklistItems = useMemo(() => {
+    const items: ChecklistItem[] = []
+
+    // Add lessons
+    lessons.forEach(lesson => {
+      items.push({
+        id: lesson.id,
+        type: "lesson",
+        title: lesson.subjectName,
+        startDate: lesson.startDate,
+        endDate: lesson.endDate,
+        completed: lesson.completed,
+        studentIds: lesson.studentIds,
+        description: lesson.description,
+        data: lesson
+      })
+    })
+
+    // Add assignments
+    assignments.forEach(assignment => {
+      // Consider assignment "completed" if it's been submitted or graded
+      const isCompleted = assignment.status === "Submitted" || assignment.status === "Graded"
+      
+      items.push({
+        id: assignment.id,
+        type: "assignment",
+        title: assignment.title,
+        dueDate: assignment.dueDate,
+        completed: isCompleted,
+        studentIds: assignment.studentIds,
+        description: assignment.description,
+        data: assignment
+      })
+    })
+
+    return items
+  }, [lessons, assignments])
+
+  // Filter items for the selected student and current week
+  const filteredItems = useMemo(() => {
+    return allChecklistItems.filter((item) => {
+      const itemDate = item.type === "lesson" 
+        ? new Date(item.startDate!)
+        : new Date(item.dueDate!)
+      const isInWeek = itemDate >= weekStart && itemDate <= weekEnd
+      const isForSelectedStudent = selectedStudent === "all" || item.studentIds.includes(selectedStudent)
       return isInWeek && isForSelectedStudent
     })
-  }, [lessons, weekStart, weekEnd, selectedStudent])
+  }, [allChecklistItems, weekStart, weekEnd, selectedStudent])
 
-  // Filter lessons for today
-  const todaysLessons = useMemo(() => {
-    return lessons.filter((lesson) => {
-      const lessonDate = new Date(lesson.startDate)
-      const isToday = isSameDay(lessonDate, currentDate)
-      const isForSelectedStudent = selectedStudent === "all" || lesson.studentIds.includes(selectedStudent)
+  // Filter items for today
+  const todaysItems = useMemo(() => {
+    return allChecklistItems.filter((item) => {
+      const itemDate = item.type === "lesson" 
+        ? new Date(item.startDate!)
+        : new Date(item.dueDate!)
+      const isToday = isSameDay(itemDate, currentDate)
+      const isForSelectedStudent = selectedStudent === "all" || item.studentIds.includes(selectedStudent)
       return isToday && isForSelectedStudent
     })
-  }, [lessons, currentDate, selectedStudent])
+  }, [allChecklistItems, currentDate, selectedStudent])
 
-  // Group lessons by day
-  const lessonsByDay = useMemo(() => {
-    return filteredLessons.reduce(
-      (acc, lesson) => {
-        const dateKey = format(new Date(lesson.startDate), "yyyy-MM-dd")
+  // Group items by day
+  const itemsByDay = useMemo(() => {
+    return filteredItems.reduce(
+      (acc, item) => {
+        const itemDate = item.type === "lesson" 
+          ? new Date(item.startDate!)
+          : new Date(item.dueDate!)
+        const dateKey = format(itemDate, "yyyy-MM-dd")
         if (!acc[dateKey]) {
           acc[dateKey] = []
         }
-        acc[dateKey].push(lesson)
+        acc[dateKey].push(item)
         return acc
       },
-      {} as Record<string, Lesson[]>,
+      {} as Record<string, ChecklistItem[]>,
     )
-  }, [filteredLessons])
+  }, [filteredItems])
 
   // Generate days of the week (Monday to Friday)
   const daysOfWeek = useMemo(() => {
@@ -104,57 +166,74 @@ export function ChecklistView() {
         dayName: format(day, "EEEE"),
         dayNumber: format(day, "d"),
         month: format(day, "MMMM"),
-        lessons: lessonsByDay[dateKey] || [],
+        items: itemsByDay[dateKey] || [],
       }
     })
-  }, [weekStart, lessonsByDay])
+  }, [weekStart, itemsByDay])
 
   // Calculate completion stats
   const completionStats = useMemo(() => {
-    const totalLessons = filteredLessons.length
-    const completedLessons = filteredLessons.filter((lesson) => lesson.completed).length
-    const completionPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+    const totalItems = filteredItems.length
+    const completedItems = filteredItems.filter((item) => item.completed).length
+    const completionPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
 
     return {
-      totalLessons,
-      completedLessons,
+      totalItems,
+      completedItems,
       completionPercentage,
     }
-  }, [filteredLessons])
+  }, [filteredItems])
 
-  // Handle lesson completion toggle
-  const handleToggleComplete = (lessonId: string) => {
-    toggleLessonComplete(lessonId)
+  // Handle item completion toggle
+  const handleToggleComplete = (item: ChecklistItem) => {
+    if (item.type === "lesson") {
+      toggleLessonComplete(item.id)
+    } else {
+      // For assignments, toggle between "Not Started" and "Submitted"
+      const assignment = item.data as Assignment
+      const newStatus = assignment.status === "Not Started" ? "Submitted" : "Not Started"
+      updateAssignment(item.id, { status: newStatus })
+    }
   }
 
-  // Handler for both client-side and server-side marking lessons complete
+  // Handler for marking all items complete
   const handleMarkAllComplete = async (e: React.FormEvent, periodType: "today" | "week") => {
     e.preventDefault()
     
-    if (!confirm(`Mark all ${periodType === "today" ? "today's" : "this week's"} lessons complete?`)) {
+    if (!confirm(`Mark all ${periodType === "today" ? "today's" : "this week's"} items complete?`)) {
       return
     }
     
     setIsSubmitting(true)
     
     try {
-      // Update client-side state immediately for a responsive UI
-      const lessonsToUpdate = periodType === "today" ? todaysLessons : filteredLessons
-      markAllLessonsComplete(lessonsToUpdate.map(lesson => lesson.id))
+      // Update items based on type
+      const itemsToUpdate = periodType === "today" ? todaysItems : filteredItems
       
-      // Then submit the server action
-      const formData = new FormData()
-      formData.append("studentId", selectedStudent)
-      formData.append("currentDateISO", currentDate.toISOString())
-      formData.append("datePeriodType", periodType)
+      itemsToUpdate.forEach(item => {
+        if (item.type === "lesson" && !item.completed) {
+          toggleLessonComplete(item.id)
+        } else if (item.type === "assignment" && !item.completed) {
+          updateAssignment(item.id, { status: "Submitted" })
+        }
+      })
       
-      const result = await markMultipleLessonsComplete(formData)
-      setLastSubmitResult(result)
+      // Submit server action for lessons only (if you have one for assignments, add it here)
+      const lessonsToUpdate = itemsToUpdate.filter(item => item.type === "lesson")
+      if (lessonsToUpdate.length > 0) {
+        const formData = new FormData()
+        formData.append("studentId", selectedStudent)
+        formData.append("currentDateISO", currentDate.toISOString())
+        formData.append("datePeriodType", periodType)
+        
+        const result = await markMultipleLessonsComplete(formData)
+        setLastSubmitResult(result)
+      }
       
       // Force a refresh to ensure we have the latest data
       router.refresh()
     } catch (error) {
-      console.error('Error marking lessons complete:', error)
+      console.error('Error marking items complete:', error)
       setLastSubmitResult({
         success: false,
         message: error instanceof Error ? error.message : "An unexpected error occurred"
@@ -164,86 +243,142 @@ export function ChecklistView() {
     }
   }
 
-  // Navigate to today
-  const goToToday = () => {
-    // We'll implement this later or remove it if not needed
-    alert("This feature is not implemented yet")
-  }
+  // Render checklist item
+  const renderChecklistItem = (item: ChecklistItem) => {
+    const isLesson = item.type === "lesson"
+    const lesson = isLesson ? item.data as Lesson : null
+    const assignment = !isLesson ? item.data as Assignment : null
 
-  // Render lesson item
-  const renderLessonItem = (lesson: Lesson) => (
-    <div
-      key={lesson.id}
-      className={cn(
-        "flex items-start gap-3 p-4 rounded-md bg-white border border-[#5e8b7e]/10 shadow-sm",
-        lesson.completed && "opacity-60",
-      )}
-    >
-      <button
-        onClick={() => handleToggleComplete(lesson.id)}
+    return (
+      <div
+        key={item.id}
         className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-[#5e8b7e] mt-0.5",
-          lesson.completed && "bg-[#5e8b7e] text-white",
+          "flex items-start gap-3 p-4 rounded-md bg-white border border-[#5e8b7e]/10 shadow-sm",
+          item.completed && "opacity-60",
         )}
       >
-        {lesson.completed && <Check className="h-3 w-3" />}
-      </button>
+        <button
+          onClick={() => handleToggleComplete(item)}
+          className={cn(
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-[#5e8b7e] mt-0.5",
+            item.completed && "bg-[#5e8b7e] text-white",
+          )}
+        >
+          {item.completed && <Check className="h-3 w-3" />}
+        </button>
 
-      <div className="flex-1 space-y-1">
-        <div className="flex items-center justify-between">
-          <div className="font-medium text-[#5e8b7e]">{lesson.subjectName}</div>
-          <div className="text-xs text-[#5e8b7e]/70">
-            {format(new Date(lesson.startDate), "h:mm a")} - {format(new Date(lesson.endDate), "h:mm a")}
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isLesson ? (
+                <BookOpen className="h-4 w-4 text-[#5e8b7e]" />
+              ) : (
+                <FileText className="h-4 w-4 text-[#5e8b7e]" />
+              )}
+              <div className="font-medium text-[#5e8b7e]">{item.title}</div>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-xs",
+                  isLesson ? "border-blue-500 text-blue-700" : "border-purple-500 text-purple-700"
+                )}
+              >
+                {isLesson ? "Lesson" : "Assignment"}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-[#5e8b7e]/70">
+              <Clock className="h-3 w-3" />
+              {isLesson ? (
+                `${format(new Date(item.startDate!), "h:mm a")} - ${format(new Date(item.endDate!), "h:mm a")}`
+              ) : (
+                `Due: ${format(new Date(item.dueDate!), "h:mm a")}`
+              )}
+            </div>
           </div>
+
+          {item.description && (
+            <div className={cn("text-sm text-[#333]", item.completed && "line-through text-[#333]/60")}>
+              {item.description}
+            </div>
+          )}
+
+          {/* Lesson-specific details */}
+          {lesson && (
+            <>
+              {lesson.objectives && (
+                <div className="mt-2">
+                  <div className="text-xs font-medium text-[#5e8b7e]">Objectives:</div>
+                  <div className={cn("text-sm text-[#333]", item.completed && "line-through text-[#333]/60")}>
+                    {lesson.objectives}
+                  </div>
+                </div>
+              )}
+
+              {lesson.materialsNeeded && (
+                <div className="mt-2">
+                  <div className="text-xs font-medium text-[#5e8b7e]">Materials:</div>
+                  <div className={cn("text-sm text-[#333]", item.completed && "line-through text-[#333]/60")}>
+                    {lesson.materialsNeeded}
+                  </div>
+                </div>
+              )}
+
+              {lesson.location && (
+                <div className="mt-2 flex items-center">
+                  <span className="text-xs font-medium text-[#5e8b7e] mr-1">Location:</span>
+                  <span className="text-xs text-[#333]">{lesson.location}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Assignment-specific details */}
+          {assignment && (
+            <>
+              <div className="mt-2 flex items-center gap-4 text-xs">
+                <div>
+                  <span className="font-medium text-[#5e8b7e]">Points:</span> {assignment.pointsPossible}
+                </div>
+                <div>
+                  <span className="font-medium text-[#5e8b7e]">Status:</span>{" "}
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs",
+                      assignment.status === "Not Started" && "border-gray-400 text-gray-600",
+                      assignment.status === "Submitted" && "border-blue-500 text-blue-700",
+                      assignment.status === "Graded" && "border-green-500 text-green-700"
+                    )}
+                  >
+                    {assignment.status}
+                  </Badge>
+                </div>
+                {assignment.status === "Graded" && assignment.pointsEarned !== undefined && (
+                  <div>
+                    <span className="font-medium text-[#5e8b7e]">Score:</span> {assignment.pointsEarned}/{assignment.pointsPossible}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {selectedStudent === "all" && item.studentIds && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {item.studentIds.map((studentId: string) => {
+                const student = students.find((s) => s.id === studentId)
+                if (!student) return null
+                return (
+                  <Badge key={studentId} className="bg-[#e2f0e6] text-[#5e8b7e] hover:bg-[#d8e8d2] border-none">
+                    {student.name.split(" ")[0]}
+                  </Badge>
+                )
+              })}
+            </div>
+          )}
         </div>
-
-        {lesson.description && (
-          <div className={cn("text-sm text-[#333]", lesson.completed && "line-through text-[#333]/60")}>
-            {lesson.description}
-          </div>
-        )}
-
-        {lesson.objectives && (
-          <div className="mt-2">
-            <div className="text-xs font-medium text-[#5e8b7e]">Objectives:</div>
-            <div className={cn("text-sm text-[#333]", lesson.completed && "line-through text-[#333]/60")}>
-              {lesson.objectives}
-            </div>
-          </div>
-        )}
-
-        {lesson.materialsNeeded && (
-          <div className="mt-2">
-            <div className="text-xs font-medium text-[#5e8b7e]">Materials:</div>
-            <div className={cn("text-sm text-[#333]", lesson.completed && "line-through text-[#333]/60")}>
-              {lesson.materialsNeeded}
-            </div>
-          </div>
-        )}
-
-        {lesson.location && (
-          <div className="mt-2 flex items-center">
-            <span className="text-xs font-medium text-[#5e8b7e] mr-1">Location:</span>
-            <span className="text-xs text-[#333]">{lesson.location}</span>
-          </div>
-        )}
-
-        {selectedStudent === "all" && lesson.studentIds && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {lesson.studentIds.map((studentId: string) => {
-              const student = students.find((s) => s.id === studentId)
-              if (!student) return null
-              return (
-                <Badge key={studentId} className="bg-[#e2f0e6] text-[#5e8b7e] hover:bg-[#d8e8d2] border-none">
-                  {student.name.split(" ")[0]}
-                </Badge>
-              )
-            })}
-          </div>
-        )}
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -251,7 +386,7 @@ export function ChecklistView() {
         <div>
           <h1 className="text-2xl font-semibold text-[#5e8b7e]">Daily Checklist</h1>
           <p className="text-[#5e8b7e]/70">
-            {selectedStudent === "all" ? "Showing lessons for all students" : `Showing lessons for ${studentName}`}
+            {selectedStudent === "all" ? "Showing lessons and assignments for all students" : `Showing lessons and assignments for ${studentName}`}
           </p>
         </div>
 
@@ -266,11 +401,6 @@ export function ChecklistView() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          <Button variant="outline" size="sm" onClick={goToToday} className="border-[#5e8b7e]/30 text-[#5e8b7e]">
-            <Calendar className="mr-2 h-4 w-4" />
-            Today
-          </Button>
         </div>
       </div>
 
@@ -281,7 +411,7 @@ export function ChecklistView() {
             <div>
               <h2 className="text-lg font-medium text-[#5e8b7e]">Weekly Progress</h2>
               <p className="text-[#5e8b7e]/70 text-sm">
-                {completionStats.completedLessons} of {completionStats.totalLessons} lessons completed
+                {completionStats.completedItems} of {completionStats.totalItems} items completed
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -302,8 +432,8 @@ export function ChecklistView() {
         <TabsContent value="day">
           <Card className="border-[#5e8b7e]/20 bg-[#faf9f5]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-medium text-[#5e8b7e]">Today's Lessons</CardTitle>
-              {todaysLessons.length > 0 && (
+              <CardTitle className="text-lg font-medium text-[#5e8b7e]">Today's Tasks</CardTitle>
+              {todaysItems.length > 0 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -319,23 +449,37 @@ export function ChecklistView() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {todaysLessons.length > 0 ? (
-                  todaysLessons.map((lesson) => renderLessonItem(lesson))
+                {todaysItems.length > 0 ? (
+                  todaysItems.map((item) => renderChecklistItem(item))
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <BookOpen className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
                     <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">Nothing on the checklist for today!</h3>
-                    <p className="text-[#5e8b7e]/70 mb-6 max-w-md">Plan new lessons for {selectedStudent === "all" ? "your students" : students.find(s => s.id === selectedStudent)?.name} by visiting the Calendar view.</p>
-                    <Button 
-                      variant="outline"
-                      className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
-                      onClick={() => {
-                        useStore.getState().setCurrentView("calendar")
-                      }}
-                    >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Go to Calendar
-                    </Button>
+                    <p className="text-[#5e8b7e]/70 mb-6 max-w-md">
+                      Plan new lessons or create assignments for {selectedStudent === "all" ? "your students" : students.find(s => s.id === selectedStudent)?.name}.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                        onClick={() => {
+                          useStore.getState().setCurrentView("calendar")
+                        }}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Plan Lessons
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                        onClick={() => {
+                          useStore.getState().setCurrentView("assignments")
+                        }}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Create Assignment
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -346,8 +490,8 @@ export function ChecklistView() {
         <TabsContent value="week">
           <Card className="border-[#5e8b7e]/20 bg-[#faf9f5]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-medium text-[#5e8b7e]">This Week's Lessons</CardTitle>
-              {filteredLessons.length > 0 && (
+              <CardTitle className="text-lg font-medium text-[#5e8b7e]">This Week's Tasks</CardTitle>
+              {filteredItems.length > 0 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -362,15 +506,15 @@ export function ChecklistView() {
               )}
             </CardHeader>
             <CardContent>
-              {daysOfWeek.some((day) => day.lessons.length > 0) ? (
+              {daysOfWeek.some((day) => day.items.length > 0) ? (
                 <div className="space-y-6">
                   {daysOfWeek.map((day) => (
-                    <div key={day.dateKey} className={day.lessons.length === 0 ? "hidden" : ""}>
+                    <div key={day.dateKey} className={day.items.length === 0 ? "hidden" : ""}>
                       <h3 className="font-medium text-[#5e8b7e] border-b border-[#5e8b7e]/20 pb-1 mb-3">
                         {day.dayName}, {day.month} {day.dayNumber}
                       </h3>
 
-                      <div className="space-y-2 pl-1">{day.lessons.map((lesson) => renderLessonItem(lesson))}</div>
+                      <div className="space-y-2 pl-1">{day.items.map((item) => renderChecklistItem(item))}</div>
                     </div>
                   ))}
                 </div>
@@ -378,17 +522,29 @@ export function ChecklistView() {
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <CheckSquare className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
                   <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">All clear! Time to plan?</h3>
-                  <p className="text-[#5e8b7e]/70 mb-6 max-w-md">No lessons scheduled for this week. Head to the Calendar view to create your weekly schedule.</p>
-                  <Button 
-                    variant="outline"
-                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
-                    onClick={() => {
-                      useStore.getState().setCurrentView("calendar")
-                    }}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Go to Calendar
-                  </Button>
+                  <p className="text-[#5e8b7e]/70 mb-6 max-w-md">No lessons or assignments scheduled for this week.</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                      onClick={() => {
+                        useStore.getState().setCurrentView("calendar")
+                      }}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Plan Lessons
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                      onClick={() => {
+                        useStore.getState().setCurrentView("assignments")
+                      }}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Create Assignment
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

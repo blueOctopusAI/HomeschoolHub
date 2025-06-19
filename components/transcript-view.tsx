@@ -31,21 +31,6 @@ const gradeToPoints = (grade: string): number => {
   return gradeMap[grade] || 0
 }
 
-// Database ID mapping for students
-// We need to use these real UUIDs for the Supabase database
-const studentIdMapping: Record<string, string> = {
-  "student1": "bb0c2d70-4553-4c25-95f1-d4dbf38ec202", // Emma Johnson
-  "student2": "9948fed0-2182-43a2-b186-1331b083eecd", // Noah Williams
-  "student3": "57b063a8-fb4e-4421-bc15-7399601c7dc1"  // Olivia Davis
-}
-
-// Reverse mapping for displaying courses from Supabase in UI
-const reverseStudentIdMapping: Record<string, string> = {
-  "bb0c2d70-4553-4c25-95f1-d4dbf38ec202": "student1", // Emma Johnson
-  "9948fed0-2182-43a2-b186-1331b083eecd": "student2", // Noah Williams
-  "57b063a8-fb4e-4421-bc15-7399601c7dc1": "student3"  // Olivia Davis
-}
-
 export function TranscriptView() {
   // Use direct selectors from useStore instead of helper hooks for consistency
   const students = useStore((state) => state.students)
@@ -59,16 +44,57 @@ export function TranscriptView() {
   const [databaseCourses, setDatabaseCourses] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  
+  // State for real student data from database
+  const [databaseStudents, setDatabaseStudents] = useState<any[]>([])
+  const [databaseStudentId, setDatabaseStudentId] = useState<string>("")
 
-  // Map the local selectedStudentId to the real database UUID
-  const databaseStudentId = selectedStudentId !== "all" ? studentIdMapping[selectedStudentId] : "";
-
-  // Get the selected student
+  // Get the selected student from the store
   const selectedStudent = useMemo(() => {
     return students.find((s) => s.id === selectedStudentId) || null
   }, [students, selectedStudentId])
 
-  // Fetch courses from Supabase when the selected student changes or after adding a new course
+  // Fetch real students from database
+  useEffect(() => {
+    const fetchDatabaseStudents = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return;
+        
+        const { data: students, error } = await supabase
+          .from('students')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error("Error fetching database students:", error);
+          return;
+        }
+
+        setDatabaseStudents(students || []);
+        
+        // If we have a selected student, find their database ID
+        if (selectedStudent && students && students.length > 0) {
+          // Try to match by name or use the first student if no match
+          const matchedStudent = students.find(s => 
+            s.name.toLowerCase() === selectedStudent.name.toLowerCase()
+          ) || students[0];
+          
+          if (matchedStudent) {
+            setDatabaseStudentId(matchedStudent.id);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch database students:", error);
+      }
+    };
+
+    fetchDatabaseStudents();
+  }, [selectedStudent]);
+
+  // Fetch courses from Supabase when the database student ID changes or after adding a new course
   useEffect(() => {
     if (selectedStudentId === "all" || !databaseStudentId) {
       setDatabaseCourses([]);
@@ -109,7 +135,7 @@ export function TranscriptView() {
       term: dbCourse.term,
       grade: dbCourse.grade,
       credits: dbCourse.credits,
-      studentId: reverseStudentIdMapping[dbCourse.student_id] || dbCourse.student_id,
+      studentId: dbCourse.student_id,
       academicYear: dbCourse.academic_year || "2024-2025"
     }));
   }, [databaseCourses]);
@@ -267,6 +293,7 @@ export function TranscriptView() {
             size="sm"
             onClick={() => setIsAddCourseModalOpen(true)}
             className="bg-[#5e8b7e] text-white hover:bg-[#4a6e63] border-[#5e8b7e]"
+            disabled={!databaseStudentId}
           >
             <Plus className="mr-2 h-4 w-4" />
             Add New Course
@@ -321,7 +348,16 @@ export function TranscriptView() {
         </div>
       </div>
 
-      {/* Render the AddCourseModal with the mapped database ID */}
+      {/* Show message if no database student is found */}
+      {!databaseStudentId && selectedStudent && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-yellow-800">
+            No database record found for {selectedStudent.name}. Please create a student record in the database first.
+          </p>
+        </div>
+      )}
+
+      {/* Render the AddCourseModal with the correct database ID */}
       <AddCourseModal 
         isOpen={isAddCourseModalOpen} 
         onOpenChange={handleModalOpenChange} 
@@ -417,9 +453,13 @@ export function TranscriptView() {
               <CardContent className="p-12 text-center">
                 <div className="flex flex-col items-center">
                   <ScrollText className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
-                  <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">No courses recorded for {selectedStudent?.name} yet</h3>
-                  <p className="text-[#5e8b7e]/70 mb-6 max-w-md">Add courses to build a complete academic transcript.</p>
-                  {/* The Add New Course button is already present in the header */}
+                  <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">No courses recorded yet</h3>
+                  <p className="text-[#5e8b7e]/70 mb-6 max-w-md">
+                    {databaseStudentId 
+                      ? "Add courses to build a complete academic transcript."
+                      : "Please ensure a student record exists in the database first."
+                    }
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -442,9 +482,11 @@ export function TranscriptView() {
                     <p>
                       <span className="text-[#5e8b7e]/70">Grade Level:</span> {selectedStudent?.gradeLevel}
                     </p>
-                    <p>
-                      <span className="text-[#5e8b7e]/70">Student ID:</span> {databaseStudentId || selectedStudent?.id}
-                    </p>
+                    {databaseStudentId && (
+                      <p className="text-xs break-all">
+                        <span className="text-[#5e8b7e]/70">Database ID:</span> {databaseStudentId}
+                      </p>
+                    )}
                   </div>
                 </div>
 

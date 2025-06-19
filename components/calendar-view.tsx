@@ -2,10 +2,12 @@
 
 import { useState, useCallback, useMemo, useTransition } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Plus, Edit, Trash2, Check, X, Loader2, Calendar } from "lucide-react"
+import { Plus, Edit, Trash2, Check, X, Loader2, Calendar, BookOpen } from "lucide-react"
 import { Button } from "./ui/button"
-import { useStore, type Lesson, type Student } from "@/lib/store"
+import { useStore, type Lesson, type Student, type Assignment } from "@/lib/store"
 import { LessonModal } from "./lesson-modal"
+import { CalendarAssignmentModal } from "./calendar-assignment-modal"
+import { AddEventChoiceModal } from "./add-event-choice-modal"
 import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
 import { useRouter } from "next/navigation"
@@ -23,9 +25,10 @@ const logoColors = {
 export interface CalendarViewProps {
   initialLessons: Lesson[]
   userStudents: Student[]
+  initialAssignments?: Assignment[]
 }
 
-export function CalendarView({ initialLessons = [], userStudents = [] }: CalendarViewProps) {
+export function CalendarView({ initialLessons = [], userStudents = [], initialAssignments = [] }: CalendarViewProps) {
   // Get data from Zustand store
   const currentDate = useStore((state) => state.currentDate)
   const selectedStudent = useStore((state) => state.selectedStudent)
@@ -36,9 +39,12 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
   // Use props data instead of Zustand store
   const students = userStudents
   const lessons = initialLessons
+  const assignments = initialAssignments
 
-  // Local state for modal
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  // Local state for modals
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false)
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false)
+  const [isChoiceModalOpen, setIsChoiceModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
 
@@ -87,6 +93,22 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
     })
   }, [lessons, daysOfWeek, selectedStudent])
 
+  // Filter assignments based on selected student and current week - memoize this calculation
+  const filteredAssignments = useMemo(() => {
+    return assignments.filter((assignment) => {
+      // Parse the assignment due date
+      const dueDate = parseISO(assignment.dueDate)
+
+      // Check if the assignment is due in the current week
+      const isInCurrentWeek = daysOfWeek.some((day) => isSameDay(day, dueDate))
+
+      // Check if the assignment is for the selected student
+      const isForSelectedStudent = selectedStudent === "all" || assignment.studentIds.includes(selectedStudent)
+
+      return isInCurrentWeek && isForSelectedStudent
+    })
+  }, [assignments, daysOfWeek, selectedStudent])
+
   // Group and sort lessons by day - memoize this calculation
   const lessonsByDay = useMemo(() => {
     return daysOfWeek.reduce(
@@ -106,11 +128,39 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
     )
   }, [daysOfWeek, filteredLessons])
 
-  // Handle adding a new lesson - use useCallback to prevent recreation on each render
-  const handleAddLesson = useCallback((day: Date) => {
+  // Group and sort assignments by day - memoize this calculation
+  const assignmentsByDay = useMemo(() => {
+    return daysOfWeek.reduce(
+      (acc, day) => {
+        // Get the day key in yyyy-MM-dd format
+        const dayKey = format(day, "yyyy-MM-dd")
+
+        // Filter assignments for this day and sort by due date
+        acc[dayKey] = filteredAssignments
+          .filter((assignment) => isSameDay(parseISO(assignment.dueDate), day))
+          .sort((a, b) => parseISO(a.dueDate).getTime() - parseISO(b.dueDate).getTime())
+
+        return acc
+      },
+      {} as Record<string, Assignment[]>,
+    )
+  }, [daysOfWeek, filteredAssignments])
+
+  // Handle adding a new event - show choice modal
+  const handleAddEvent = useCallback((day: Date) => {
     setSelectedDate(day)
+    setIsChoiceModalOpen(true)
+  }, [])
+  
+  // Handle choosing to add a lesson
+  const handleChooseLesson = useCallback(() => {
     setEditingLesson(null)
-    setIsModalOpen(true)
+    setIsLessonModalOpen(true)
+  }, [])
+  
+  // Handle choosing to add an assignment
+  const handleChooseAssignment = useCallback(() => {
+    setIsAssignmentModalOpen(true)
   }, [])
 
   // Handle editing a lesson - use useCallback to prevent recreation on each render
@@ -122,12 +172,12 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
     
     setEditingLesson(lesson)
     setSelectedDate(parseISO(lesson.startDate))
-    setIsModalOpen(true)
+    setIsLessonModalOpen(true)
   }, [])
 
   // Handle modal close - use useCallback to prevent recreation on each render
-  const handleModalClose = useCallback(() => {
-    setIsModalOpen(false)
+  const handleLessonModalClose = useCallback(() => {
+    setIsLessonModalOpen(false)
   }, [])
 
   // Handle deleting a lesson
@@ -280,9 +330,11 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
           {daysOfWeek.map((day, index) => {
             const dayKey = format(day, "yyyy-MM-dd")
             const dayLessons = lessonsByDay[dayKey] || []
+            const dayAssignments = assignmentsByDay[dayKey] || []
             const dayName = format(day, "EEEE").toLowerCase()
             const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
             const isToday = isSameDay(day, new Date())
+            const hasEvents = dayLessons.length > 0 || dayAssignments.length > 0
 
             return (
               <div
@@ -295,8 +347,9 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                   isToday && "bg-opacity-40",
                 )}
               >
-                {dayLessons.length > 0 ? (
+                {hasEvents ? (
                   <div className="space-y-2">
+                    {/* Render lessons */}
                     {dayLessons.map((lesson) => {
                       const startTime = parseISO(lesson.startDate)
                       const endTime = parseISO(lesson.endDate)
@@ -391,6 +444,60 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                         </div>
                       )
                     })}
+                    
+                    {/* Render assignments */}
+                    {dayAssignments.map((assignment) => {
+                      const dueDate = parseISO(assignment.dueDate)
+                      const statusColor = assignment.status === "Graded" 
+                        ? "bg-green-100 text-green-800 border-green-200"
+                        : assignment.status === "Submitted"
+                        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                        : "bg-gray-100 text-gray-800 border-gray-200"
+
+                      return (
+                        <div
+                          key={`assignment-${assignment.id}`}
+                          onClick={() => router.push('/assignments')}
+                          className="rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5 bg-blue-50 border-l-4 border-l-blue-500"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-1.5">
+                              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                              <span className="font-medium text-blue-900">{assignment.title}</span>
+                            </div>
+                            <Badge className={cn("text-xs px-1.5 py-0", statusColor)}>
+                              {assignment.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="text-xs text-blue-700 mt-1 font-medium">
+                            Due by {format(dueDate, "h:mm a")}
+                          </div>
+
+                          {/* Student tags */}
+                          {assignment.studentIds.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {assignment.studentIds.map((id: string) => (
+                                <Badge
+                                  key={id}
+                                  className="bg-blue-100 text-blue-700 rounded-full text-xs px-2 py-0.5 font-normal"
+                                >
+                                  {getStudentName(id)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+
+                          {assignment.pointsPossible > 0 && (
+                            <div className="text-xs mt-1 text-blue-600">
+                              {assignment.status === "Graded" && assignment.pointsEarned !== undefined
+                                ? `${assignment.pointsEarned}/${assignment.pointsPossible} points`
+                                : `${assignment.pointsPossible} points`}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-center py-6">
@@ -404,10 +511,10 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                       colorSet.text.replace("text", "bg"),
                       "hover:opacity-90 text-white",
                     )}
-                    onClick={() => handleAddLesson(day)}
+                    onClick={() => handleAddEvent(day)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Lesson
+                    Add Event
                   </Button>
                 </div>
                 )}
@@ -419,7 +526,7 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
                     colorSet.text.replace("text", "bg"),
                     "hover:opacity-90 text-white",
                   )}
-                  onClick={() => handleAddLesson(day)}
+                  onClick={() => handleAddEvent(day)}
                 >
                   <Plus className="h-4 w-4" />
                   <span className="sr-only">Add lesson</span>
@@ -429,12 +536,28 @@ export function CalendarView({ initialLessons = [], userStudents = [] }: Calenda
           })}
         </div>
 
+        {/* Choice Modal */}
+        <AddEventChoiceModal
+          open={isChoiceModalOpen}
+          onOpenChange={setIsChoiceModalOpen}
+          onChooseAssignment={handleChooseAssignment}
+          onChooseLesson={handleChooseLesson}
+        />
+
         {/* Lesson Modal */}
         <LessonModal
-          isOpen={isModalOpen}
-          onClose={handleModalClose}
+          isOpen={isLessonModalOpen}
+          onClose={handleLessonModalClose}
           selectedDate={selectedDate}
           editingLesson={editingLesson}
+          students={students}
+        />
+        
+        {/* Assignment Modal */}
+        <CalendarAssignmentModal
+          open={isAssignmentModalOpen}
+          onOpenChange={setIsAssignmentModalOpen}
+          selectedDate={selectedDate}
           students={students}
         />
       </div>

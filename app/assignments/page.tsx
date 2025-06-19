@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
-import { AssignmentsView } from "@/components/assignments-view"
+import { AssignmentsLessonsView } from "@/components/assignments-lessons-view"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
-import { Assignment, Student, Course } from "@/lib/store"
+import { Assignment, Student, Course, Lesson } from "@/lib/store"
 
 // Force dynamic rendering due to cookies usage
 export const dynamic = 'force-dynamic'
@@ -84,9 +84,49 @@ export default async function AssignmentsPage() {
       } as Assignment;
     }) || [];
     
+    // Fetch lessons for the authenticated user
+    const { data: lessonsWithStudents, error: lessonsError } = await supabase
+      .from('lessons')
+      .select(`
+        *,
+        lesson_students (
+          student_id
+        )
+      `)
+      .eq('user_id', user.id)
+    
+    if (lessonsError) {
+      console.error("Error fetching lessons:", lessonsError)
+    }
+    
+    // Transform lessons to match the Lesson type
+    const transformedLessons = lessonsWithStudents?.map(lesson => {
+      // Extract student_ids from lesson_students relation
+      const studentIds = lesson.lesson_students?.map(
+        (relation: { student_id: string }) => relation.student_id
+      ) || []
+      
+      return {
+        id: lesson.id,
+        subjectId: lesson.subject_id || '',
+        subjectName: lesson.subject_name,
+        subjectColor: lesson.subject_color,
+        startDate: lesson.start_date,
+        endDate: lesson.end_date,
+        studentIds: studentIds,
+        description: lesson.description,
+        objectives: lesson.objectives,
+        materialsNeeded: lesson.materials_needed,
+        location: lesson.location,
+        completed: lesson.completed,
+        day_of_week: lesson.day_of_week
+      } as Lesson
+    }) || []
+    
     return (
-      <AssignmentsView 
+      <AssignmentsLessonsView 
         initialAssignments={transformedAssignments} 
+        initialLessons={transformedLessons}
         userStudents={userStudents as Student[] || []} 
         userCourses={userCourses as Course[] || []} 
       />

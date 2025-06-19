@@ -72,17 +72,53 @@ export async function createCourse(
       academicYear: formData.get('academicYear')?.toString() || undefined,
     }
     
-
+    // Log the raw form data for debugging
+    console.log('Raw form data:', {
+      studentId: formData.get('studentId'),
+      name: formData.get('name'),
+      category: formData.get('category'),
+      term: formData.get('term'),
+      grade: formData.get('grade'),
+      credits: formData.get('credits'),
+      academicYear: formData.get('academicYear'),
+    })
+    
+    console.log('Parsed course data:', courseData)
     
     // Validate the course data
     const validationResult = courseSchema.safeParse(courseData)
     
     if (!validationResult.success) {
-      const errors = validationResult.error.flatten().fieldErrors
+      const errors = validationResult.error.flatten()
+      console.error('Validation errors:', errors)
+      
+      // Create a more detailed error message
+      const fieldErrors = errors.fieldErrors
+      const formErrors = errors.formErrors
+      
+      // If there are form-level errors, include them in the message
+      let errorMessage = "Please correct the errors below."
+      if (formErrors && formErrors.length > 0) {
+        errorMessage = formErrors.join(', ')
+      }
+      
+      // Add specific field information to errors for better debugging
+      const detailedErrors: Record<string, string[]> = {}
+      
+      for (const [field, messages] of Object.entries(fieldErrors)) {
+        if (messages && messages.length > 0) {
+          // Add the actual value that failed validation
+          const actualValue = courseData[field as keyof typeof courseData]
+          detailedErrors[field] = messages.map(msg => 
+            `${msg} (received: "${actualValue}")`
+          )
+        }
+      }
+      
       return {
         success: false,
-        message: "Please correct the errors below.",
-        errors
+        message: errorMessage,
+        errors: detailedErrors
       }
     }
     
@@ -95,11 +131,12 @@ export async function createCourse(
       .single()
     
     if (studentError || !studentData) {
+      console.error("Student verification error:", studentError)
       return {
         success: false,
         message: "You can only create courses for students that belong to you.",
         errors: {
-          studentId: ["Student not found or doesn't belong to you."]
+          studentId: [`Student not found or doesn't belong to you. (Student ID: ${validationResult.data.studentId})`]
         }
       }
     }
@@ -122,9 +159,21 @@ export async function createCourse(
     
     if (error) {
       console.error("Error creating course:", error)
+      
+      // Provide more specific error messages based on the error
+      let message = "Failed to create course."
+      
+      if (error.code === '23505') {
+        message = "A course with similar details already exists."
+      } else if (error.code === '23503') {
+        message = "Invalid reference to student or user."
+      } else if (error.message) {
+        message = error.message
+      }
+      
       return {
         success: false,
-        message: error.message || "Failed to create course."
+        message
       }
     }
     

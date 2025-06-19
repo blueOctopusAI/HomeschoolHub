@@ -1,7 +1,7 @@
 import { CalendarView } from "@/components/calendar-view"
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { type Lesson, type Student } from "@/lib/store"
+import { type Lesson, type Student, type Assignment } from "@/lib/store"
 
 // Force dynamic rendering due to cookies usage
 export const dynamic = 'force-dynamic'
@@ -92,7 +92,45 @@ export default async function CalendarPage() {
       }))
     ]
     
-    return <CalendarView initialLessons={transformedLessons} userStudents={transformedStudents} />
+    // Fetch user's assignments with student assignments
+    const { data: assignmentsWithStudents, error: assignmentsError } = await supabase
+      .from('assignments')
+      .select(`
+        *,
+        assignment_students (
+          student_id
+        )
+      `)
+      .eq('user_id', user.id)
+    
+    if (assignmentsError) {
+      console.error("Error fetching assignments:", assignmentsError)
+    }
+    
+    // Transform assignments data to match the expected Assignment type
+    const transformedAssignments: Assignment[] = (assignmentsWithStudents || []).map(assignment => {
+      const studentIds = assignment.assignment_students ? 
+        assignment.assignment_students.map((s: { student_id: string }) => s.student_id) : 
+        []
+      
+      return {
+        id: assignment.id,
+        title: assignment.title,
+        description: assignment.description,
+        studentIds: studentIds,
+        dueDate: assignment.due_date,
+        status: assignment.status as "Not Started" | "Submitted" | "Graded",
+        pointsPossible: assignment.points_possible,
+        pointsEarned: assignment.points_earned,
+        courseId: assignment.course_id
+      }
+    })
+    
+    return <CalendarView 
+      initialLessons={transformedLessons} 
+      userStudents={transformedStudents}
+      initialAssignments={transformedAssignments}
+    />
   } catch (error) {
     console.error("Error in CalendarPage:", error)
     return <div>Error loading calendar. Please try again later.</div>
