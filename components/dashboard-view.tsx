@@ -24,11 +24,14 @@ export const DashboardView = memo(function DashboardView() {
   const { data: students, loading: loadingStudents } = useStudentsData()
   const { data: todaysLessons, loading: loadingLessons, error: lessonError } = useTodaysLessonsData(selectedStudent, currentDate)
   
-  // Calculate the date range for upcoming assignments (next 7 days)
+  // Calculate the date range for upcoming assignments (today + next 7 days)
+  // Start from beginning of today to include assignments due today
+  const startOfToday = new Date(currentDate)
+  startOfToday.setHours(0, 0, 0, 0)
   const nextWeek = addDays(currentDate, 7)
   const { data: upcomingAssignments, loading: loadingAssignments } = useUpcomingAssignmentsData(
     selectedStudent, 
-    currentDate, 
+    startOfToday, 
     nextWeek
   )
   

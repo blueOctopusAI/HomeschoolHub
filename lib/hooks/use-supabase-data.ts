@@ -25,12 +25,6 @@ export function useSupabaseQuery<T>(
     fetchFunctionRef.current = fetchFunction;
   }, [fetchFunction]);
   
-  // Use refs to store dependencies to avoid infinite loops
-  const dependenciesRef = useRef(dependencies);
-  useEffect(() => {
-    dependenciesRef.current = dependencies;
-  }, [dependencies]);
-
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -51,9 +45,7 @@ export function useSupabaseQuery<T>(
 
   useEffect(() => {
     fetchData()
-    // We deliberately don't include dependencies here because we're using refs
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchData])
+  }, [fetchData, ...dependencies])
 
   const refetch = useCallback(() => {
     return fetchData()
