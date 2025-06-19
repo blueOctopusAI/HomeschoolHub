@@ -77,6 +77,34 @@ export async function createAssignment(
       }
     }
     
+    // Validate that all students exist and belong to this user
+    const { data: validStudents, error: studentCheckError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('id', studentIdArray)
+    
+    if (studentCheckError) {
+      console.error("Error checking students:", studentCheckError)
+      return {
+        success: false,
+        message: "Failed to validate students."
+      }
+    }
+    
+    const validStudentIds = validStudents?.map(s => s.id) || []
+    const invalidStudentIds = studentIdArray.filter(id => !validStudentIds.includes(id))
+    
+    if (invalidStudentIds.length > 0) {
+      return {
+        success: false,
+        message: "Some selected students no longer exist or don't belong to your account.",
+        errors: {
+          studentIds: ["Please refresh the page and select valid students."]
+        }
+      }
+    }
+    
     // Insert the assignment into the database
     const { data: newAssignment, error } = await supabase
       .from('assignments')
