@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { useStore, type Assignment } from "@/lib/store"
+import { useStore, type Assignment, type Student, type Course } from "@/lib/store"
 import { createAssignment } from "@/app/assignments/actions"
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"

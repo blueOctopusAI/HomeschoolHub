@@ -7,7 +7,7 @@ import type { View } from "@/lib/store"
 
 // List of valid views
 const VALID_VIEWS = [
-  "dashboard", "calendar", "assignments", "checklist", 
+  "dashboard", "students", "calendar", "assignments", "checklist", 
   "reports", "portfolio", "compliance", "transcript", "settings"
 ] as const
 

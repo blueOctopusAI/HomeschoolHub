@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 import { User } from '@supabase/supabase-js'
 
 // Define types
-export type View = "dashboard" | "calendar" | "assignments" | "checklist" | "reports" | "portfolio" | "compliance" | "transcript" | "settings"
+export type View = "dashboard" | "students" | "calendar" | "assignments" | "checklist" | "reports" | "portfolio" | "compliance" | "transcript" | "settings"
 
 export type Student = {
   id: string

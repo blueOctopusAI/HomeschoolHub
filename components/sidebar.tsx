@@ -15,6 +15,7 @@ import {
   Briefcase,
   ClipboardCheck,
   ExternalLink,
+  Users,
 } from "lucide-react"
 import { type View } from "@/lib/store"
 import { usePathname, useRouter } from "next/navigation"
@@ -79,6 +80,11 @@ export function Sidebar() {
       name: "Dashboard",
       icon: <Home className="h-5 w-5" />,
       value: "dashboard",
+    },
+    {
+      name: "Students",
+      icon: <Users className="h-5 w-5" />,
+      value: "students",
     },
     {
       name: "Calendar",
@@ -157,61 +163,6 @@ export function Sidebar() {
             </li>
           ))}
         </ul>
-
-        {/* Students Section */}
-        <div className="mt-8">
-          <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Students</h3>
-          <ul className="mt-2 space-y-1">
-            {students.map((student) => (
-              <li key={student.id}>
-                {student.id !== "all" ? (
-                  <div className="flex items-center justify-between w-full px-3 py-2 rounded-md">
-                    <button
-                      onClick={() => setSelectedStudent(student.id)}
-                      className={cn(
-                        "flex items-center flex-1 text-sm font-medium rounded-md transition-colors",
-                        selectedStudent === student.id
-                          ? "text-[#5e8b7e]"
-                          : "text-gray-700 hover:text-[#5e8b7e]",
-                      )}
-                    >
-                      <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-xs font-medium">
-                        {student.initials || student.name.charAt(0)}
-                      </div>
-                      <span className="ml-3 truncate">{student.name}</span>
-                    </button>
-                    {dbStudentIdMap[student.id] && (
-                      <Link 
-                        href={`/student/${dbStudentIdMap[student.id]}`} 
-                        title={`View ${student.name}'s Portal`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-[#5e8b7e] transition-colors ml-2"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setSelectedStudent(student.id)}
-                    className={cn(
-                      "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                      selectedStudent === student.id
-                        ? "bg-[#5e8b7e]/10 text-[#5e8b7e]"
-                        : "text-gray-700 hover:bg-[#5e8b7e]/10 hover:text-[#5e8b7e]",
-                    )}
-                  >
-                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-xs font-medium">
-                      {student.initials || student.name.charAt(0)}
-                    </div>
-                    <span className="ml-3 truncate">{student.name}</span>
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
       </nav>
 
       <div className="p-4">
