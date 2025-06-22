@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns"
-import { useStore, type Lesson, type Student, type Assignment } from "@/lib/store"
-import { Check, Calendar, BookOpen, CheckSquare, CheckCircle, FileText, Clock } from "lucide-react"
+import { useStore } from "@/lib/store"
+import { Check, Calendar, BookOpen, CheckSquare, CheckCircle, FileText, Clock, RefreshCcw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { markMultipleLessonsComplete } from "@/app/checklist/actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 // Combined type for checklist items
 type ChecklistItem = {
@@ -24,44 +25,155 @@ type ChecklistItem = {
   completed: boolean
   studentIds: string[]
   description?: string
-  data: Lesson | Assignment
+  studentNames?: string[]
+  subjectColor?: string
+  status?: string
+  pointsPossible?: number
+  pointsEarned?: number
 }
 
 export function ChecklistView() {
   const router = useRouter();
+  
   // Get data from Zustand store
-  const lessons = useStore((state) => state.lessons)
-  const assignments = useStore((state) => state.assignments)
   const students = useStore((state) => state.students)
   const selectedStudent = useStore((state) => state.selectedStudent)
   const currentDate = useStore((state) => state.currentDate)
-  const toggleLessonComplete = useStore((state) => state.toggleLessonComplete)
-  const updateAssignment = useStore((state) => state.updateAssignment)
-  const markAllLessonsComplete = useStore((state) => state.markAllLessonsComplete)
 
   // Local state
   const [view, setView] = useState<"day" | "week">("day")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [lastSubmitResult, setLastSubmitResult] = useState<{ success: boolean, message: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [lessons, setLessons] = useState<any[]>([])
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  // Effect to show toast when submit result changes
+  // Get real student data from database
+  const [databaseStudents, setDatabaseStudents] = useState<any[]>([])
+  const [selectedDatabaseStudentId, setSelectedDatabaseStudentId] = useState<string>("")
+
+  // Fetch real students from database
   useEffect(() => {
-    if (lastSubmitResult) {
-      if (lastSubmitResult.success) {
-        toast({
-          title: "Success",
-          description: lastSubmitResult.message,
-          variant: "default",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: lastSubmitResult.message,
-          variant: "destructive",
-        })
+    const fetchDatabaseStudents = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return;
+        
+        const { data: dbStudents, error } = await supabase
+          .from('students')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error("Error fetching database students:", error);
+          return;
+        }
+
+        setDatabaseStudents(dbStudents || []);
+        
+        // Map selected student to database ID
+        if (selectedStudent !== "all" && dbStudents && dbStudents.length > 0) {
+          const selectedStudentFromStore = students.find(s => s.id === selectedStudent);
+          if (selectedStudentFromStore) {
+            const matchedStudent = dbStudents.find(s => 
+              s.name.toLowerCase() === selectedStudentFromStore.name.toLowerCase()
+            );
+            if (matchedStudent) {
+              setSelectedDatabaseStudentId(matchedStudent.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch database students:", error);
       }
-    }
-  }, [lastSubmitResult])
+    };
+
+    fetchDatabaseStudents();
+  }, [selectedStudent, students]);
+
+  // Fetch lessons and assignments from database
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Get date range for the week
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+
+        // Fetch lessons with student associations
+        let lessonsQuery = supabase
+          .from('lessons')
+          .select(`
+            *,
+            lesson_students (
+              student_id,
+              students (
+                id,
+                name
+              )
+            ),
+            subjects (
+              name,
+              color
+            )
+          `)
+          .eq('user_id', user.id)
+          .gte('start_date', weekStart.toISOString())
+          .lte('start_date', weekEnd.toISOString());
+
+        const { data: lessonsData, error: lessonsError } = await lessonsQuery;
+
+        if (lessonsError) {
+          console.error("Error fetching lessons:", lessonsError);
+        } else {
+          setLessons(lessonsData || []);
+        }
+
+        // Fetch assignments with student associations
+        let assignmentsQuery = supabase
+          .from('assignments')
+          .select(`
+            *,
+            assignment_students (
+              student_id,
+              students (
+                id,
+                name
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .gte('due_date', weekStart.toISOString())
+          .lte('due_date', weekEnd.toISOString());
+
+        const { data: assignmentsData, error: assignmentsError } = await assignmentsQuery;
+
+        if (assignmentsError) {
+          console.error("Error fetching assignments:", assignmentsError);
+        } else {
+          setAssignments(assignmentsData || []);
+        }
+
+      } catch (error) {
+        console.error("Failed to fetch checklist data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentDate, refreshKey]);
 
   // Get the student name for display
   const studentName = useMemo(() => {
@@ -80,33 +192,40 @@ export function ChecklistView() {
 
     // Add lessons
     lessons.forEach(lesson => {
+      const studentIds = lesson.lesson_students?.map((ls: any) => ls.student_id) || [];
+      const studentNames = lesson.lesson_students?.map((ls: any) => ls.students?.name).filter(Boolean) || [];
+      
       items.push({
         id: lesson.id,
         type: "lesson",
-        title: lesson.subjectName,
-        startDate: lesson.startDate,
-        endDate: lesson.endDate,
-        completed: lesson.completed,
-        studentIds: lesson.studentIds,
+        title: lesson.subjects?.name || lesson.subject_name || "Untitled Lesson",
+        startDate: lesson.start_date,
+        endDate: lesson.end_date,
+        completed: lesson.completed || false,
+        studentIds: studentIds,
+        studentNames: studentNames,
         description: lesson.description,
-        data: lesson
+        subjectColor: lesson.subjects?.color || "#5e8b7e"
       })
     })
 
     // Add assignments
     assignments.forEach(assignment => {
-      // Consider assignment "completed" if it's been submitted or graded
-      const isCompleted = assignment.status === "Submitted" || assignment.status === "Graded"
+      const studentIds = assignment.assignment_students?.map((as: any) => as.student_id) || [];
+      const studentNames = assignment.assignment_students?.map((as: any) => as.students?.name).filter(Boolean) || [];
       
       items.push({
         id: assignment.id,
         type: "assignment",
-        title: assignment.title,
-        dueDate: assignment.dueDate,
-        completed: isCompleted,
-        studentIds: assignment.studentIds,
+        title: assignment.title || "Untitled Assignment",
+        dueDate: assignment.due_date,
+        completed: assignment.status === "Submitted" || assignment.status === "Graded",
+        studentIds: studentIds,
+        studentNames: studentNames,
         description: assignment.description,
-        data: assignment
+        status: assignment.status,
+        pointsPossible: assignment.points_possible,
+        pointsEarned: assignment.points_earned
       })
     })
 
@@ -120,10 +239,11 @@ export function ChecklistView() {
         ? new Date(item.startDate!)
         : new Date(item.dueDate!)
       const isInWeek = itemDate >= weekStart && itemDate <= weekEnd
-      const isForSelectedStudent = selectedStudent === "all" || item.studentIds.includes(selectedStudent)
+      const isForSelectedStudent = selectedStudent === "all" || 
+        (selectedDatabaseStudentId && item.studentIds.includes(selectedDatabaseStudentId))
       return isInWeek && isForSelectedStudent
     })
-  }, [allChecklistItems, weekStart, weekEnd, selectedStudent])
+  }, [allChecklistItems, weekStart, weekEnd, selectedStudent, selectedDatabaseStudentId])
 
   // Filter items for today
   const todaysItems = useMemo(() => {
@@ -132,10 +252,11 @@ export function ChecklistView() {
         ? new Date(item.startDate!)
         : new Date(item.dueDate!)
       const isToday = isSameDay(itemDate, currentDate)
-      const isForSelectedStudent = selectedStudent === "all" || item.studentIds.includes(selectedStudent)
+      const isForSelectedStudent = selectedStudent === "all" || 
+        (selectedDatabaseStudentId && item.studentIds.includes(selectedDatabaseStudentId))
       return isToday && isForSelectedStudent
     })
-  }, [allChecklistItems, currentDate, selectedStudent])
+  }, [allChecklistItems, currentDate, selectedStudent, selectedDatabaseStudentId])
 
   // Group items by day
   const itemsByDay = useMemo(() => {
@@ -185,14 +306,42 @@ export function ChecklistView() {
   }, [filteredItems])
 
   // Handle item completion toggle
-  const handleToggleComplete = (item: ChecklistItem) => {
-    if (item.type === "lesson") {
-      toggleLessonComplete(item.id)
-    } else {
-      // For assignments, toggle between "Not Started" and "Submitted"
-      const assignment = item.data as Assignment
-      const newStatus = assignment.status === "Not Started" ? "Submitted" : "Not Started"
-      updateAssignment(item.id, { status: newStatus })
+  const handleToggleComplete = async (item: ChecklistItem) => {
+    try {
+      const supabase = createSupabaseBrowserClient();
+      
+      if (item.type === "lesson") {
+        const { error } = await supabase
+          .from('lessons')
+          .update({ completed: !item.completed })
+          .eq('id', item.id);
+          
+        if (error) throw error;
+      } else {
+        // For assignments, toggle between "Not Started" and "Submitted"
+        const newStatus = item.status === "Not Started" ? "Submitted" : "Not Started";
+        const { error } = await supabase
+          .from('assignments')
+          .update({ status: newStatus })
+          .eq('id', item.id);
+          
+        if (error) throw error;
+      }
+      
+      // Refresh data
+      setRefreshKey(prev => prev + 1);
+      
+      toast({
+        title: "Success",
+        description: `${item.type === "lesson" ? "Lesson" : "Assignment"} updated successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
     }
   }
 
@@ -207,37 +356,53 @@ export function ChecklistView() {
     setIsSubmitting(true)
     
     try {
+      const supabase = createSupabaseBrowserClient();
+      
       // Update items based on type
       const itemsToUpdate = periodType === "today" ? todaysItems : filteredItems
       
-      itemsToUpdate.forEach(item => {
-        if (item.type === "lesson" && !item.completed) {
-          toggleLessonComplete(item.id)
-        } else if (item.type === "assignment" && !item.completed) {
-          updateAssignment(item.id, { status: "Submitted" })
-        }
-      })
-      
-      // Submit server action for lessons only (if you have one for assignments, add it here)
-      const lessonsToUpdate = itemsToUpdate.filter(item => item.type === "lesson")
-      if (lessonsToUpdate.length > 0) {
-        const formData = new FormData()
-        formData.append("studentId", selectedStudent)
-        formData.append("currentDateISO", currentDate.toISOString())
-        formData.append("datePeriodType", periodType)
+      // Update lessons
+      const lessonIds = itemsToUpdate
+        .filter(item => item.type === "lesson" && !item.completed)
+        .map(item => item.id);
         
-        const result = await markMultipleLessonsComplete(formData)
-        setLastSubmitResult(result)
+      if (lessonIds.length > 0) {
+        const { error } = await supabase
+          .from('lessons')
+          .update({ completed: true })
+          .in('id', lessonIds);
+          
+        if (error) throw error;
       }
       
-      // Force a refresh to ensure we have the latest data
-      router.refresh()
+      // Update assignments
+      const assignmentIds = itemsToUpdate
+        .filter(item => item.type === "assignment" && !item.completed)
+        .map(item => item.id);
+        
+      if (assignmentIds.length > 0) {
+        const { error } = await supabase
+          .from('assignments')
+          .update({ status: "Submitted" })
+          .in('id', assignmentIds);
+          
+        if (error) throw error;
+      }
+      
+      // Refresh data
+      setRefreshKey(prev => prev + 1);
+      
+      toast({
+        title: "Success",
+        description: `All ${periodType}'s items marked as complete`,
+      });
     } catch (error) {
       console.error('Error marking items complete:', error)
-      setLastSubmitResult({
-        success: false,
-        message: error instanceof Error ? error.message : "An unexpected error occurred"
-      })
+      toast({
+        title: "Error",
+        description: "Failed to mark all items complete",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false)
     }
@@ -246,8 +411,6 @@ export function ChecklistView() {
   // Render checklist item
   const renderChecklistItem = (item: ChecklistItem) => {
     const isLesson = item.type === "lesson"
-    const lesson = isLesson ? item.data as Lesson : null
-    const assignment = !isLesson ? item.data as Assignment : null
 
     return (
       <div
@@ -271,7 +434,7 @@ export function ChecklistView() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isLesson ? (
-                <BookOpen className="h-4 w-4 text-[#5e8b7e]" />
+                <BookOpen className="h-4 w-4" style={{ color: item.subjectColor }} />
               ) : (
                 <FileText className="h-4 w-4 text-[#5e8b7e]" />
               )}
@@ -289,9 +452,13 @@ export function ChecklistView() {
             <div className="flex items-center gap-1 text-xs text-[#5e8b7e]/70">
               <Clock className="h-3 w-3" />
               {isLesson ? (
-                `${format(new Date(item.startDate!), "h:mm a")} - ${format(new Date(item.endDate!), "h:mm a")}`
+                item.startDate && item.endDate ? (
+                  `${format(new Date(item.startDate), "h:mm a")} - ${format(new Date(item.endDate), "h:mm a")}`
+                ) : (
+                  "Time not set"
+                )
               ) : (
-                `Due: ${format(new Date(item.dueDate!), "h:mm a")}`
+                item.dueDate ? `Due: ${format(new Date(item.dueDate), "h:mm a")}` : "No due date"
               )}
             </div>
           </div>
@@ -302,82 +469,60 @@ export function ChecklistView() {
             </div>
           )}
 
-          {/* Lesson-specific details */}
-          {lesson && (
-            <>
-              {lesson.objectives && (
-                <div className="mt-2">
-                  <div className="text-xs font-medium text-[#5e8b7e]">Objectives:</div>
-                  <div className={cn("text-sm text-[#333]", item.completed && "line-through text-[#333]/60")}>
-                    {lesson.objectives}
-                  </div>
-                </div>
-              )}
-
-              {lesson.materialsNeeded && (
-                <div className="mt-2">
-                  <div className="text-xs font-medium text-[#5e8b7e]">Materials:</div>
-                  <div className={cn("text-sm text-[#333]", item.completed && "line-through text-[#333]/60")}>
-                    {lesson.materialsNeeded}
-                  </div>
-                </div>
-              )}
-
-              {lesson.location && (
-                <div className="mt-2 flex items-center">
-                  <span className="text-xs font-medium text-[#5e8b7e] mr-1">Location:</span>
-                  <span className="text-xs text-[#333]">{lesson.location}</span>
-                </div>
-              )}
-            </>
-          )}
-
           {/* Assignment-specific details */}
-          {assignment && (
-            <>
-              <div className="mt-2 flex items-center gap-4 text-xs">
+          {!isLesson && (
+            <div className="mt-2 flex items-center gap-4 text-xs">
+              {item.pointsPossible !== undefined && (
                 <div>
-                  <span className="font-medium text-[#5e8b7e]">Points:</span> {assignment.pointsPossible}
+                  <span className="font-medium text-[#5e8b7e]">Points:</span> {item.pointsPossible}
                 </div>
+              )}
+              {item.status && (
                 <div>
                   <span className="font-medium text-[#5e8b7e]">Status:</span>{" "}
                   <Badge 
                     variant="outline" 
                     className={cn(
                       "text-xs",
-                      assignment.status === "Not Started" && "border-gray-400 text-gray-600",
-                      assignment.status === "Submitted" && "border-blue-500 text-blue-700",
-                      assignment.status === "Graded" && "border-green-500 text-green-700"
+                      item.status === "Not Started" && "border-gray-400 text-gray-600",
+                      item.status === "Submitted" && "border-blue-500 text-blue-700",
+                      item.status === "Graded" && "border-green-500 text-green-700"
                     )}
                   >
-                    {assignment.status}
+                    {item.status}
                   </Badge>
                 </div>
-                {assignment.status === "Graded" && assignment.pointsEarned !== undefined && (
-                  <div>
-                    <span className="font-medium text-[#5e8b7e]">Score:</span> {assignment.pointsEarned}/{assignment.pointsPossible}
-                  </div>
-                )}
-              </div>
-            </>
+              )}
+              {item.status === "Graded" && item.pointsEarned !== undefined && (
+                <div>
+                  <span className="font-medium text-[#5e8b7e]">Score:</span> {item.pointsEarned}/{item.pointsPossible}
+                </div>
+              )}
+            </div>
           )}
 
-          {selectedStudent === "all" && item.studentIds && (
+          {(selectedStudent === "all" || !selectedDatabaseStudentId) && item.studentNames && item.studentNames.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {item.studentIds.map((studentId: string) => {
-                const student = students.find((s) => s.id === studentId)
-                if (!student) return null
-                return (
-                  <Badge key={studentId} className="bg-[#e2f0e6] text-[#5e8b7e] hover:bg-[#d8e8d2] border-none">
-                    {student.name.split(" ")[0]}
-                  </Badge>
-                )
-              })}
+              {item.studentNames.map((name: string, index: number) => (
+                <Badge key={index} className="bg-[#e2f0e6] text-[#5e8b7e] hover:bg-[#d8e8d2] border-none">
+                  {name.split(" ")[0]}
+                </Badge>
+              ))}
             </div>
           )}
         </div>
       </div>
     )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-[#5e8b7e]">Loading checklist...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -391,6 +536,16 @@ export function ChecklistView() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRefreshKey(prev => prev + 1)}
+            className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7]"
+          >
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+          
           <Tabs value={view} onValueChange={(v) => setView(v as "day" | "week")} className="w-[240px]">
             <TabsList className="grid w-full grid-cols-2 bg-[#e9f1e7]">
               <TabsTrigger value="day" className="data-[state=active]:bg-[#5e8b7e] data-[state=active]:text-white">
@@ -456,15 +611,13 @@ export function ChecklistView() {
                     <BookOpen className="h-16 w-16 text-[#5e8b7e]/30 mb-4" />
                     <h3 className="text-xl font-medium text-[#5e8b7e] mb-2">Nothing on the checklist for today!</h3>
                     <p className="text-[#5e8b7e]/70 mb-6 max-w-md">
-                      Plan new lessons or create assignments for {selectedStudent === "all" ? "your students" : students.find(s => s.id === selectedStudent)?.name}.
+                      Plan new lessons or create assignments for {selectedStudent === "all" ? "your students" : studentName}.
                     </p>
                     <div className="flex gap-2">
                       <Button 
                         variant="outline"
                         className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
-                        onClick={() => {
-                          useStore.getState().setCurrentView("calendar")
-                        }}
+                        onClick={() => router.push('/calendar')}
                       >
                         <Calendar className="mr-2 h-4 w-4" />
                         Plan Lessons
@@ -472,9 +625,7 @@ export function ChecklistView() {
                       <Button 
                         variant="outline"
                         className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
-                        onClick={() => {
-                          useStore.getState().setCurrentView("assignments")
-                        }}
+                        onClick={() => router.push('/assignments')}
                       >
                         <FileText className="mr-2 h-4 w-4" />
                         Create Assignment
@@ -527,9 +678,7 @@ export function ChecklistView() {
                     <Button 
                       variant="outline"
                       className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
-                      onClick={() => {
-                        useStore.getState().setCurrentView("calendar")
-                      }}
+                      onClick={() => router.push('/calendar')}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
                       Plan Lessons
@@ -537,9 +686,7 @@ export function ChecklistView() {
                     <Button 
                       variant="outline"
                       className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
-                      onClick={() => {
-                        useStore.getState().setCurrentView("assignments")
-                      }}
+                      onClick={() => router.push('/assignments')}
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       Create Assignment
