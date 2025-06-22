@@ -26,11 +26,7 @@ interface Assignment {
   points_possible: number
   points_earned?: number
   grade_percentage?: number
-  feedback?: string
-  submitted_at?: string
-  graded_at?: string
   course_name?: string
-  submission_text?: string
 }
 
 interface KidFriendlyGradesProps {
@@ -60,65 +56,48 @@ export function KidFriendlyGrades({ studentId, studentName }: KidFriendlyGradesP
           return
         }
         
-        // Try multiple approaches to get assignments
+        // First, get the assignment IDs for this student
+        const { data: studentAssignments } = await supabase
+          .from('assignment_students')
+          .select('assignment_id')
+          .eq('student_id', studentId)
         
-        // Approach 1: Try with assignment_students join
-        let { data: joinedAssignments, error: joinError } = await supabase
+        const assignmentIds = studentAssignments ? studentAssignments.map(sa => sa.assignment_id) : []
+        
+        if (assignmentIds.length === 0) {
+          console.log('No assignments found for student')
+          setAssignments([])
+          setIsLoading(false)
+          return
+        }
+        
+        // Now fetch the actual assignments with their grades
+        const { data: assignments, error: assignmentsError } = await supabase
           .from('assignments')
           .select(`
             *,
-            assignment_students!left (
-              student_id,
-              submitted_at,
-              submission_text,
-              grade,
-              feedback,
-              graded_at
-            ),
             courses (
               id,
               name
             )
           `)
           .eq('user_id', user.id)
+          .in('id', assignmentIds)
           .order('created_at', { ascending: false })
         
-        if (joinError) {
-          console.error('Error with joined query:', joinError)
+        if (assignmentsError) {
+          console.error('Error fetching assignments:', assignmentsError)
+          setAssignments([])
+          setIsLoading(false)
+          return
         }
         
-        // If no joined assignments or error, try direct query
-        if (!joinedAssignments || joinedAssignments.length === 0) {
-          const { data: directAssignments, error: directError } = await supabase
-            .from('assignments')
-            .select(`
-              *,
-              courses (
-                id,
-                name
-              )
-            `)
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-          
-          if (directError) {
-            console.error('Error with direct query:', directError)
-          } else {
-            joinedAssignments = directAssignments
-          }
-        }
+        console.log('Raw assignments data:', assignments)
         
-        console.log('Raw assignments data:', joinedAssignments)
-        
-        // Transform assignments
-        const transformedAssignments = joinedAssignments?.map(assignment => {
-          // Check if this assignment has student data
-          const studentData = assignment.assignment_students?.find(
-            (as: any) => as.student_id === studentId
-          )
-          
-          const gradePercentage = studentData?.grade && assignment.points_possible > 0
-            ? (studentData.grade / assignment.points_possible) * 100
+        // Transform assignments - grades are already in the assignments table
+        const transformedAssignments = assignments?.map(assignment => {
+          const gradePercentage = assignment.points_earned !== null && assignment.points_earned !== undefined && assignment.points_possible > 0
+            ? (assignment.points_earned / assignment.points_possible) * 100
             : undefined
 
           return {
@@ -126,17 +105,11 @@ export function KidFriendlyGrades({ studentId, studentName }: KidFriendlyGradesP
             title: assignment.title || 'Untitled Assignment',
             description: assignment.description,
             due_date: assignment.due_date,
-            status: studentData?.submitted_at ? 
-              (studentData?.grade !== null ? 'Graded' : 'Submitted') : 
-              (assignment.status || 'Not Started'),
+            status: assignment.status || 'Not Started',
             points_possible: assignment.points_possible || 100,
-            points_earned: studentData?.grade,
+            points_earned: assignment.points_earned,
             grade_percentage: gradePercentage,
-            feedback: studentData?.feedback,
-            submitted_at: studentData?.submitted_at,
-            graded_at: studentData?.graded_at,
-            course_name: assignment.courses?.name,
-            submission_text: studentData?.submission_text
+            course_name: assignment.courses?.name
           }
         }) || []
         
@@ -382,13 +355,6 @@ export function KidFriendlyGrades({ studentId, studentName }: KidFriendlyGradesP
                       </div>
                     )}
                   </div>
-
-                  {assignment.feedback && (
-                    <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <p className="text-sm font-medium text-yellow-800 mb-1">Teacher's Note:</p>
-                      <p className="text-sm text-gray-700">{assignment.feedback}</p>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -434,24 +400,7 @@ export function KidFriendlyGrades({ studentId, studentName }: KidFriendlyGradesP
                 </div>
               )}
 
-              {selectedAssignment.submission_text && (
-                <div>
-                  <p className="font-medium text-gray-700 mb-2">Your Answer:</p>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-gray-700">{selectedAssignment.submission_text}</p>
-                  </div>
-                </div>
-              )}
 
-              {selectedAssignment.feedback && (
-                <div className="p-4 bg-yellow-50 rounded-lg border-2 border-yellow-200">
-                  <p className="font-medium text-yellow-800 mb-1 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Teacher's Special Note:
-                  </p>
-                  <p className="text-gray-700">{selectedAssignment.feedback}</p>
-                </div>
-              )}
 
               <Button
                 onClick={() => setSelectedAssignment(null)}

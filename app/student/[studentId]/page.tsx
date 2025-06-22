@@ -145,12 +145,12 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
   // Get array of assignment IDs
   const assignmentIds = studentAssignments ? studentAssignments.map(sa => sa.assignment_id) : [];
 
-  // Fetch assignments with these IDs
+  // Fetch assignments for the student
   let upcomingAssignments = [];
-  let assignmentsError = null;
 
   if (assignmentIds.length > 0) {
-    const { data, error } = await supabase
+    // Fetch assignments - grades are stored directly in the assignments table
+    const { data: assignmentsData, error: assignmentsError } = await supabase
       .from("assignments")
       .select(`
         id, 
@@ -164,18 +164,15 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
       `)
       .eq("user_id", user.id)
       .in("id", assignmentIds)
-      .gte("due_date", today.toISOString()) // Only future assignments
-      .order('due_date', { ascending: true })
-      .limit(5); // Limit to 5 upcoming assignments
-    
-    upcomingAssignments = data || [];
-    assignmentsError = error;
+      .order('due_date', { ascending: false })
+      .limit(10);
 
-  }
-
-  // Handle any errors in assignment fetching
-  if (assignmentsError) {
-    console.error("Error fetching assignments:", assignmentsError);
+    if (assignmentsError) {
+      console.error("Error fetching assignments:", assignmentsError);
+    } else if (assignmentsData) {
+      upcomingAssignments = assignmentsData;
+      console.log("Assignments data:", assignmentsData);
+    }
   }
   
   return (
@@ -198,13 +195,13 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
           <StudentChecklistWithActions lessons={todaysLessons} studentId={student.id} />
         </div>
 
-        {/* Upcoming Assignments */}
+        {/* Assignments */}
         <div className="bg-white p-6 rounded-2xl shadow-lg mb-8 border-2 border-blue-100">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
               <span className="text-2xl">🎯</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800">Upcoming Challenges</h3>
+            <h3 className="text-2xl font-bold text-gray-800">My Assignments</h3>
           </div>
           <StudentAssignmentActions assignments={upcomingAssignments} studentId={student.id} />
         </div>

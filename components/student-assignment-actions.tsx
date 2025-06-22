@@ -25,6 +25,7 @@ export default function StudentAssignmentActions({
   assignments: Assignment[], 
   studentId: string 
 }) {
+  console.log("StudentAssignmentActions received assignments:", assignments);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null);
@@ -91,6 +92,13 @@ export default function StudentAssignmentActions({
           {assignments.map((assignment) => {
             const daysUntilDue = getDaysUntilDue(assignment.due_date);
             const isLoading = isPending && pendingAssignmentId === assignment.id;
+            
+            console.log(`Rendering assignment ${assignment.title}:`, {
+              status: assignment.status,
+              points_earned: assignment.points_earned,
+              isGraded: assignment.status === 'Graded',
+              hasPoints: assignment.points_earned !== null && assignment.points_earned !== undefined
+            });
             
             return (
               <li 
@@ -200,12 +208,23 @@ export default function StudentAssignmentActions({
                     )}
                     
                     {/* Show grade if graded */}
-                    {assignment.status === 'Graded' && assignment.points_earned !== null && (
+                    {assignment.status === 'Graded' && (
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-700">
-                          {assignment.points_earned}/{assignment.points_possible}
-                        </p>
-                        <p className="text-sm text-green-600 font-medium">Points Earned</p>
+                        {assignment.points_earned !== null && assignment.points_earned !== undefined ? (
+                          <>
+                            <p className="text-2xl font-bold text-green-700">
+                              {assignment.points_earned}/{assignment.points_possible}
+                            </p>
+                            <p className="text-sm text-green-600 font-medium">Points Earned</p>
+                            {assignment.points_possible > 0 && (
+                              <p className="text-xs text-green-600">
+                                {Math.round((assignment.points_earned / assignment.points_possible) * 100)}%
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-600">Grade pending</p>
+                        )}
                       </div>
                     )}
                   </div>
