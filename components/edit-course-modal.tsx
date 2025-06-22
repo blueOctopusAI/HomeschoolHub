@@ -14,15 +14,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createCourse } from "@/app/courses/actions"
+import { updateCourse } from "@/app/courses/actions"
 import { useToast } from "@/components/ui/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
-interface AddCourseModalProps {
+interface EditCourseModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  studentIdForCourse: string
+  course: {
+    id: string
+    name: string
+    category: string
+    term: string
+    grade: string
+    credits: number
+    academicYear?: string
+  } | null
 }
 
 // Subject categories
@@ -65,9 +73,9 @@ const gradeOptions = [
 // Academic year options
 const academicYearOptions = ["2022-2023", "2023-2024", "2024-2025", "2025-2026", "2026-2027"]
 
-export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: AddCourseModalProps) {
+export function EditCourseModal({ isOpen, onOpenChange, course }: EditCourseModalProps) {
   // Use server action with useActionState
-  const [state, formAction] = useActionState(createCourse, undefined)
+  const [state, formAction] = useActionState(updateCourse, undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const hasShownSuccessToast = useRef(false)
@@ -81,21 +89,19 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
   const [credits, setCredits] = useState(1.0)
   const [academicYear, setAcademicYear] = useState("2024-2025")
 
-  // Reset form when modal is opened/closed
+  // Reset form when modal is opened with a course
   useEffect(() => {
-    if (isOpen) {
-      // Reset form for new course
-      setName("")
-      setCategory("Mathematics")
-      setTerm("Full Year")
-      setGrade("A")
-      setCredits(1.0)
-      setAcademicYear("2024-2025")
-      // Reset submission status as well (just in case)
+    if (isOpen && course) {
+      setName(course.name)
+      setCategory(course.category)
+      setTerm(course.term as (typeof termOptions)[number])
+      setGrade(course.grade)
+      setCredits(course.credits)
+      setAcademicYear(course.academicYear || "2024-2025")
       setIsSubmitting(false)
       hasShownSuccessToast.current = false
     }
-  }, [isOpen])
+  }, [isOpen, course])
 
   // Close modal on successful submission and show toast
   useEffect(() => {
@@ -109,7 +115,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
       // Show success toast
       toast({
         title: "Success",
-        description: state.message || "Course added successfully",
+        description: state.message || "Course updated successfully",
         variant: "default",
       })
       
@@ -149,17 +155,6 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
     
-    // Log form data before submission for debugging
-    console.log('Submitting form with data:', {
-      studentId: formData.get('studentId'),
-      name: formData.get('name'),
-      category: formData.get('category'),
-      term: formData.get('term'),
-      grade: formData.get('grade'),
-      credits: formData.get('credits'),
-      academicYear: formData.get('academicYear'),
-    })
-    
     try {
       await formAction(formData)
     } catch (error) {
@@ -168,6 +163,8 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
     }
   }
 
+  if (!course) return null
+
   // Check if there are any field errors
   const hasFieldErrors = state?.errors && Object.keys(state.errors).length > 0
 
@@ -175,9 +172,9 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#faf9f5] max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-[#5e8b7e]">Add New Course</DialogTitle>
+          <DialogTitle className="text-[#5e8b7e]">Edit Course</DialogTitle>
           <DialogDescription className="text-[#5e8b7e]/70">
-            Enter the details for the course you want to add to the transcript.
+            Update the details for {course.name}
           </DialogDescription>
         </DialogHeader>
 
@@ -204,8 +201,8 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
         )}
 
         <form action={handleSubmit} className="grid gap-4 py-4" ref={formRef}>
-          {/* Hidden input for student ID */}
-          <input type="hidden" name="studentId" value={studentIdForCourse} />
+          {/* Hidden input for course ID */}
+          <input type="hidden" name="courseId" value={course.id} />
 
           <div className="grid gap-2">
             <Label htmlFor="name" className="text-[#5e8b7e]">
@@ -358,7 +355,7 @@ export function AddCourseModal({ isOpen, onOpenChange, studentIdForCourse }: Add
               disabled={isSubmitting}
               className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
             >
-              {isSubmitting ? "Adding..." : "Add Course"}
+              {isSubmitting ? "Updating..." : "Update Course"}
             </Button>
           </DialogFooter>
         </form>

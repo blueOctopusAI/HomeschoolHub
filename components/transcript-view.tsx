@@ -3,11 +3,13 @@
 import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Printer, FileDown, Filter, Plus, RefreshCcw, ScrollText } from "lucide-react"
+import { Printer, FileDown, Filter, Plus, RefreshCcw, ScrollText, Edit2, Trash2 } from "lucide-react"
 import { useStore, type Course, type Student } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AddCourseModal } from "@/components/add-course-modal"
+import { EditCourseModal } from "@/components/edit-course-modal"
+import { DeleteCourseDialog } from "@/components/delete-course-dialog"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 // GPA calculation helper
@@ -40,10 +42,19 @@ export function TranscriptView() {
   // State for controlling the AddCourseModal
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false)
   
+  // State for controlling the EditCourseModal
+  const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false)
+  const [courseToEdit, setCourseToEdit] = useState<any>(null)
+  
+  // State for controlling the DeleteCourseDialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [courseToDelete, setCourseToDelete] = useState<any>(null)
+  
   // State for courses fetched from Supabase
   const [databaseCourses, setDatabaseCourses] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [refreshTimeout, setRefreshTimeout] = useState<NodeJS.Timeout | null>(null)
   
   // State for real student data from database
   const [databaseStudents, setDatabaseStudents] = useState<any[]>([])
@@ -53,6 +64,15 @@ export function TranscriptView() {
   const selectedStudent = useMemo(() => {
     return students.find((s) => s.id === selectedStudentId) || null
   }, [students, selectedStudentId])
+  
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+    };
+  }, [refreshTimeout])
 
   // Fetch real students from database
   useEffect(() => {
@@ -101,6 +121,8 @@ export function TranscriptView() {
       return;
     }
 
+    let isSubscribed = true;
+
     const fetchCourses = async () => {
       setIsLoading(true);
       try {
@@ -115,15 +137,24 @@ export function TranscriptView() {
           return;
         }
 
-        setDatabaseCourses(courses || []);
+        if (isSubscribed) {
+          setDatabaseCourses(courses || []);
+        }
       } catch (error) {
         console.error("Failed to fetch courses:", error);
       } finally {
-        setIsLoading(false);
+        if (isSubscribed) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchCourses();
+
+    // Cleanup function to prevent state updates on unmounted component
+    return () => {
+      isSubscribed = false;
+    };
   }, [databaseStudentId, refreshKey, selectedStudentId]);
 
   // Convert database courses to the format expected by the UI
@@ -143,18 +174,69 @@ export function TranscriptView() {
   // Use the transformed courses instead of the ones from the store
   const studentCourses = transformedCourses;
 
+  // Helper function to trigger refresh with debouncing
+  const triggerRefresh = () => {
+    // Clear any existing timeout
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+    }
+    
+    // Set a new timeout for refresh
+    const timeout = setTimeout(() => {
+      setRefreshKey(prev => prev + 1);
+      setRefreshTimeout(null);
+    }, 500);
+    
+    setRefreshTimeout(timeout);
+  };
+  
   // Force a refresh of courses after modal closes
   const handleModalOpenChange = (open: boolean) => {
     setIsAddCourseModalOpen(open);
-    if (!open) {
-      // Refresh data when modal closes
-      setRefreshKey(prev => prev + 1);
+    if (!open && !isLoading) {
+      triggerRefresh();
     }
+  };
+  
+  // Handle edit modal close
+  const handleEditModalOpenChange = (open: boolean) => {
+    setIsEditCourseModalOpen(open);
+    if (!open) {
+      setCourseToEdit(null);
+      if (!isLoading) {
+        triggerRefresh();
+      }
+    }
+  };
+  
+  // Handle delete dialog close
+  const handleDeleteDialogOpenChange = (open: boolean) => {
+    setIsDeleteDialogOpen(open);
+    if (!open) {
+      setCourseToDelete(null);
+      if (!isLoading) {
+        triggerRefresh();
+      }
+    }
+  };
+  
+  // Handle edit course
+  const handleEditCourse = (course: any) => {
+    setCourseToEdit(course);
+    setIsEditCourseModalOpen(true);
+  };
+  
+  // Handle delete course
+  const handleDeleteCourse = (course: any) => {
+    setCourseToDelete(course);
+    setIsDeleteDialogOpen(true);
   };
 
   // Manual refresh button handler
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    if (!isLoading) {
+      triggerRefresh();
+    }
   };
 
   // Group courses by academic year
@@ -363,6 +445,20 @@ export function TranscriptView() {
         onOpenChange={handleModalOpenChange} 
         studentIdForCourse={databaseStudentId} 
       />
+      
+      {/* Render the EditCourseModal */}
+      <EditCourseModal
+        isOpen={isEditCourseModalOpen}
+        onOpenChange={handleEditModalOpenChange}
+        course={courseToEdit}
+      />
+      
+      {/* Render the DeleteCourseDialog */}
+      <DeleteCourseDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
+        course={courseToDelete}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
@@ -406,6 +502,7 @@ export function TranscriptView() {
                             <th className="text-left py-3 px-4 font-medium text-[#5e8b7e]">Grade</th>
                             <th className="text-left py-3 px-4 font-medium text-[#5e8b7e]">Credits</th>
                             <th className="text-left py-3 px-4 font-medium text-[#5e8b7e]">Term</th>
+                            <th className="text-left py-3 px-4 font-medium text-[#5e8b7e]">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -433,11 +530,33 @@ export function TranscriptView() {
                                 </td>
                                 <td className="py-3 px-4">{typeof course.credits === 'number' ? course.credits.toFixed(1) : course.credits}</td>
                                 <td className="py-3 px-4">{course.term}</td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditCourse(course)}
+                                      className="h-8 w-8 p-0 hover:bg-[#e9f1e7] text-[#5e8b7e]"
+                                      title="Edit course"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteCourse(course)}
+                                      className="h-8 w-8 p-0 hover:bg-red-50 text-red-600"
+                                      title="Delete course"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
                               </tr>
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={5} className="py-6 text-center text-[#5e8b7e]/60 italic">
+                              <td colSpan={6} className="py-6 text-center text-[#5e8b7e]/60 italic">
                                 No courses found for this academic year.
                               </td>
                             </tr>
