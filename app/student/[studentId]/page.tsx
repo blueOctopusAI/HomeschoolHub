@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import StudentPortalLayout from "@/components/student-portal-layout";
 import StudentChecklistWithActions from "@/components/student-checklist-with-actions";
 import StudentAssignmentActions from "@/components/student-assignment-actions";
+import { KidFriendlyGrades } from "@/components/kid-friendly-grades";
 
 // Force dynamic rendering due to cookies usage
 export const dynamic = 'force-dynamic'
@@ -180,18 +181,43 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
   return (
     <StudentPortalLayout studentName={student.name}>
       <div className="student-portal-container">
-        <h2 className="text-2xl text-sage-600 mb-6">Welcome, {student.name}!</h2>
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-purple-400 to-blue-500 rounded-2xl p-8 mb-8 text-white shadow-lg">
+          <h2 className="text-3xl font-bold mb-2">Hi, {student.name}! 👋</h2>
+          <p className="text-lg opacity-90">Ready for an awesome day of learning?</p>
+        </div>
         
         {/* Today's Checklist with integrated component */}
-        <div className="mb-8 bg-white p-5 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-sage-700 mb-3">Today's Checklist</h3>
+        <div className="mb-8 bg-white p-6 rounded-2xl shadow-lg border-2 border-purple-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📋</span>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800">Today's Adventures</h3>
+          </div>
           <StudentChecklistWithActions lessons={todaysLessons} studentId={student.id} />
         </div>
 
         {/* Upcoming Assignments */}
-        <div className="bg-white p-5 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-sage-700 mb-3">Upcoming Assignments</h3>
+        <div className="bg-white p-6 rounded-2xl shadow-lg mb-8 border-2 border-blue-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🎯</span>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800">Upcoming Challenges</h3>
+          </div>
           <StudentAssignmentActions assignments={upcomingAssignments} studentId={student.id} />
+        </div>
+        
+        {/* My Grades Section */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-green-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🏆</span>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800">My Achievements</h3>
+          </div>
+          <KidFriendlyGrades studentId={student.id} studentName={student.name} />
         </div>
       </div>
     </StudentPortalLayout>
