@@ -73,19 +73,98 @@ export function StudentsView({ initialStudents }: StudentsViewProps) {
     return student.initials || student.name.charAt(0).toUpperCase()
   }
 
+  // Mobile card component
+  const renderMobileStudentCard = (student: Student) => {
+    return (
+      <Card 
+        key={student.id}
+        className="mb-4 cursor-pointer hover:bg-[#5e8b7e]/5 transition-colors"
+        onClick={(e) => {
+          // Don't navigate if clicking on buttons or links
+          const target = e.target as HTMLElement
+          if (target.closest('button') || target.closest('a')) {
+            return
+          }
+          router.push(`/student/${student.id}`)
+        }}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-base font-medium">
+                {getInitials(student)}
+              </div>
+              <div>
+                <h3 className="font-medium text-[#5e8b7e]">{student.name}</h3>
+                {student.gradeLevel && (
+                  <Badge className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs mt-1">
+                    <GraduationCap className="mr-1 h-3 w-3" />
+                    {student.gradeLevel}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleEditStudent(student)
+                }}
+                className="h-8 w-8 p-0 text-[#5e8b7e]"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteStudent(student)
+                }}
+                className="h-8 w-8 p-0 text-red-500"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pt-0">
+          {student.notes && (
+            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{student.notes}</p>
+          )}
+          
+          <Link 
+            href={`/student/${student.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-[#5e8b7e] hover:text-[#4a6e63] text-sm font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="mr-1 h-4 w-4" />
+            View Student Portal
+          </Link>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[#5e8b7e]">Students</h1>
-          <p className="text-[#5e8b7e]/70">
+          <h1 className="text-xl md:text-2xl font-semibold text-[#5e8b7e]">Students</h1>
+          <p className="text-sm md:text-base text-[#5e8b7e]/70">
             Manage your homeschool students
           </p>
         </div>
 
         <Button 
           onClick={() => setIsCreateModalOpen(true)} 
-          className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
+          className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-sm md:text-base"
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Add Student
@@ -95,7 +174,7 @@ export function StudentsView({ initialStudents }: StudentsViewProps) {
       <Card className="bg-white rounded-md shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="text-[#5e8b7e]">Student List</CardTitle>
+            <CardTitle className="text-[#5e8b7e] text-lg md:text-xl">Student List</CardTitle>
 
             <div className="relative w-full sm:w-[300px]">
               <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e8b7e]/50" />
@@ -103,7 +182,7 @@ export function StudentsView({ initialStudents }: StudentsViewProps) {
                 placeholder="Search by name or grade..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 border-[#5e8b7e]/20"
+                className="pl-8 border-[#5e8b7e]/20 text-sm"
               />
             </div>
           </div>
@@ -111,103 +190,111 @@ export function StudentsView({ initialStudents }: StudentsViewProps) {
 
         <CardContent>
           {filteredStudents.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Grade Level</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Portal</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student) => (
-                    <TableRow 
-                      key={student.id}
-                      className="cursor-pointer hover:bg-[#5e8b7e]/5 transition-colors"
-                      onClick={(e) => {
-                        // Don't navigate if clicking on buttons or links
-                        const target = e.target as HTMLElement
-                        if (target.closest('button') || target.closest('a')) {
-                          return
-                        }
-                        router.push(`/student/${student.id}`)
-                      }}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-sm font-medium">
-                            {getInitials(student)}
-                          </div>
-                          <span className="text-[#5e8b7e]">{student.name}</span>
-                        </div>
-                      </TableCell>
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden">
+                {filteredStudents.map(renderMobileStudentCard)}
+              </div>
 
-                      <TableCell>
-                        {student.gradeLevel ? (
-                          <Badge className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full">
-                            <GraduationCap className="mr-1 h-3 w-3" />
-                            {student.gradeLevel}
-                          </Badge>
-                        ) : (
-                          <span className="text-gray-400">Not set</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="max-w-[300px]">
-                        <span className="text-sm text-gray-600 truncate block">
-                          {student.notes || "No notes"}
-                        </span>
-                      </TableCell>
-
-                      <TableCell>
-                        <Link 
-                          href={`/student/${student.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-[#5e8b7e] hover:text-[#4a6e63] text-sm"
-                        >
-                          <ExternalLink className="mr-1 h-4 w-4" />
-                          View Portal
-                        </Link>
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditStudent(student)}
-                            className="h-8 w-8 p-0 text-[#5e8b7e]"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteStudent(student)}
-                            className="h-8 w-8 p-0 text-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Grade Level</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead>Portal</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStudents.map((student) => (
+                      <TableRow 
+                        key={student.id}
+                        className="cursor-pointer hover:bg-[#5e8b7e]/5 transition-colors"
+                        onClick={(e) => {
+                          // Don't navigate if clicking on buttons or links
+                          const target = e.target as HTMLElement
+                          if (target.closest('button') || target.closest('a')) {
+                            return
+                          }
+                          router.push(`/student/${student.id}`)
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-[#5e8b7e]/10 text-[#5e8b7e] text-sm font-medium">
+                              {getInitials(student)}
+                            </div>
+                            <span className="text-[#5e8b7e]">{student.name}</span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          {student.gradeLevel ? (
+                            <Badge className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full">
+                              <GraduationCap className="mr-1 h-3 w-3" />
+                              {student.gradeLevel}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400">Not set</span>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="max-w-[300px]">
+                          <span className="text-sm text-gray-600 truncate block">
+                            {student.notes || "No notes"}
+                          </span>
+                        </TableCell>
+
+                        <TableCell>
+                          <Link 
+                            href={`/student/${student.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-[#5e8b7e] hover:text-[#4a6e63] text-sm"
+                          >
+                            <ExternalLink className="mr-1 h-4 w-4" />
+                            View Portal
+                          </Link>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditStudent(student)}
+                              className="h-8 w-8 p-0 text-[#5e8b7e]"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteStudent(student)}
+                              className="h-8 w-8 p-0 text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
               <div className="text-[#5e8b7e] mb-4">
-                <User className="h-16 w-16 mx-auto opacity-60" />
-                <h3 className="mt-3 text-xl font-medium">
+                <User className="h-12 w-12 md:h-16 md:w-16 mx-auto opacity-60" />
+                <h3 className="mt-3 text-lg md:text-xl font-medium">
                   {searchQuery ? "No students match your search" : "No students yet!"}
                 </h3>
               </div>
-              <p className="text-[#5e8b7e]/70 max-w-md mb-6">
+              <p className="text-sm md:text-base text-[#5e8b7e]/70 max-w-md mb-6 px-4">
                 {searchQuery 
                   ? "Try adjusting your search to find students."
                   : "Get started by adding your first student to begin organizing your homeschool."}
@@ -216,7 +303,7 @@ export function StudentsView({ initialStudents }: StudentsViewProps) {
                 {searchQuery && (
                   <Button
                     variant="outline"
-                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6] text-sm"
                     onClick={() => setSearchQuery("")}
                   >
                     <Search className="mr-2 h-4 w-4" />
@@ -226,7 +313,7 @@ export function StudentsView({ initialStudents }: StudentsViewProps) {
                 {!searchQuery && (
                   <Button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-white"
+                    className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-white text-sm"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Your First Student

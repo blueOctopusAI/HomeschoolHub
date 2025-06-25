@@ -114,7 +114,7 @@ export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection
         onOpenChange(newOpen)
       }}
     >
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5e8b7e]">Create New Assignment</DialogTitle>
           <DialogDescription>Add a new assignment for your students to complete.</DialogDescription>

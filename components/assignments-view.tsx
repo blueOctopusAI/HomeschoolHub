@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Calendar, Filter, Plus, Search, Edit, Trash2, SlidersHorizontal, PlusSquare } from "lucide-react"
+import { BookOpen, Calendar, Filter, Plus, Search, Edit, Trash2, SlidersHorizontal, PlusSquare, Clock, Users as UsersIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -125,12 +125,105 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
     return "bg-gray-100 text-gray-800"
   }
 
+  // Mobile card view for assignments
+  const renderMobileAssignmentCard = (assignment: Assignment) => {
+    const overdue = isOverdue(assignment.dueDate, assignment.status)
+    
+    return (
+      <Card key={assignment.id} className={`mb-4 ${overdue ? 'border-red-200 bg-red-50/50' : ''}`}>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1">
+              <CardTitle className="text-base font-medium text-[#5e8b7e]">
+                {assignment.title}
+              </CardTitle>
+              {assignment.courseId && (
+                <div className="text-xs text-[#5e8b7e]/70 flex items-center mt-1">
+                  <BookOpen className="h-3 w-3 mr-1" />
+                  {getCourseName(assignment.courseId)}
+                </div>
+              )}
+            </div>
+            <Badge className={getStatusBadgeClass(assignment.status)}>
+              {assignment.status}
+            </Badge>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-3">
+          {/* Students */}
+          <div className="flex items-center gap-2">
+            <UsersIcon className="h-4 w-4 text-[#5e8b7e]/50" />
+            <div className="flex flex-wrap gap-1">
+              {getStudentNames(assignment.studentIds).map((name, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          
+          {/* Due Date */}
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[#5e8b7e]/50" />
+            <span className={`text-sm ${overdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+              Due {format(parseISO(assignment.dueDate), "MMM d, yyyy")}
+            </span>
+          </div>
+          
+          {/* Points */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {assignment.status === "Graded" && assignment.pointsEarned !== undefined ? (
+                <span className="font-medium">
+                  {assignment.pointsEarned} / {assignment.pointsPossible} points
+                </span>
+              ) : (
+                <span>{assignment.pointsPossible} points possible</span>
+              )}
+            </div>
+            
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditAssignment(assignment)}
+                className="h-8 w-8 p-0 text-[#5e8b7e]"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <form
+                onSubmit={e => {
+                  if (!confirm("Are you sure you want to delete this assignment?")) {
+                    e.preventDefault();
+                  }
+                }}
+                action={deleteAssignment}
+              >
+                <input type="hidden" name="assignmentId" value={assignment.id} />
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-red-500"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </form>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[#5e8b7e]">Assignments</h1>
-          <p className="text-[#5e8b7e]/70">
+          <h1 className="text-xl md:text-2xl font-semibold text-[#5e8b7e]">Assignments</h1>
+          <p className="text-sm md:text-base text-[#5e8b7e]/70">
             {selectedStudent === "all"
               ? "Showing assignments for all students"
               : `Showing assignments for ${students.find((s) => s.id === selectedStudent)?.name || "Selected Student"}`}
@@ -138,11 +231,19 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
         </div>
 
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsCreateModalOpen(true)} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)} 
+            className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-sm md:text-base"
+          >
             <Plus className="mr-2 h-4 w-4" />
-            New Assignment
+            <span className="hidden sm:inline">New Assignment</span>
+            <span className="sm:hidden">New</span>
           </Button>
-          <Button onClick={() => setIsBatchCreateModalOpen(true)} variant="outline" className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]">
+          <Button 
+            onClick={() => setIsBatchCreateModalOpen(true)} 
+            variant="outline" 
+            className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6] hidden md:flex"
+          >
             <PlusSquare className="mr-2 h-4 w-4" />
             Batch Create
           </Button>
@@ -151,176 +252,186 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
 
       <Card className="bg-white rounded-md shadow-sm">
         <CardHeader className="pb-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="text-[#5e8b7e]">Assignment List</CardTitle>
+          <div className="flex flex-col gap-4">
+            <CardTitle className="text-[#5e8b7e] text-lg md:text-xl">Assignment List</CardTitle>
 
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <div className="relative w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
                 <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5e8b7e]/50" />
                 <Input
                   placeholder="Search assignments..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 border-[#5e8b7e]/20 w-full sm:w-[200px]"
+                  className="pl-8 border-[#5e8b7e]/20 text-sm"
                 />
               </div>
 
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[150px] border-[#5e8b7e]/20">
-                  <div className="flex items-center">
-                    <Filter className="mr-2 h-4 w-4 text-[#5e8b7e]/50" />
-                    <SelectValue placeholder="Filter by status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Not Started">Not Started</SelectItem>
-                  <SelectItem value="Submitted">Submitted</SelectItem>
-                  <SelectItem value="Graded">Graded</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[150px] border-[#5e8b7e]/20 text-sm">
+                    <div className="flex items-center">
+                      <Filter className="mr-2 h-4 w-4 text-[#5e8b7e]/50" />
+                      <SelectValue placeholder="Filter" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Not Started">Not Started</SelectItem>
+                    <SelectItem value="Submitted">Submitted</SelectItem>
+                    <SelectItem value="Graded">Graded</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="border-[#5e8b7e]/20">
-                    <SlidersHorizontal className="mr-2 h-4 w-4 text-[#5e8b7e]/50" />
-                    Sort
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleSort("title")}>
-                    By Title {sortBy.field === "title" && (sortBy.direction === "asc" ? "↑" : "↓")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort("dueDate")}>
-                    By Due Date {sortBy.field === "dueDate" && (sortBy.direction === "asc" ? "↑" : "↓")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort("status")}>
-                    By Status {sortBy.field === "status" && (sortBy.direction === "asc" ? "↑" : "↓")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleSort("points")}>
-                    By Points {sortBy.field === "points" && (sortBy.direction === "asc" ? "↑" : "↓")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="border-[#5e8b7e]/20">
+                      <SlidersHorizontal className="mr-2 h-4 w-4 text-[#5e8b7e]/50" />
+                      <span className="hidden sm:inline">Sort</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleSort("title")}>
+                      By Title {sortBy.field === "title" && (sortBy.direction === "asc" ? "↑" : "↓")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleSort("dueDate")}>
+                      By Due Date {sortBy.field === "dueDate" && (sortBy.direction === "asc" ? "↑" : "↓")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleSort("status")}>
+                      By Status {sortBy.field === "status" && (sortBy.direction === "asc" ? "↑" : "↓")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleSort("points")}>
+                      By Points {sortBy.field === "points" && (sortBy.direction === "asc" ? "↑" : "↓")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
           {sortedAssignments.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[300px]">Assignment</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Points</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedAssignments.map((assignment) => (
-                    <TableRow
-                      key={assignment.id}
-                      className={isOverdue(assignment.dueDate, assignment.status) ? "bg-red-50" : undefined}
-                    >
-                      <TableCell className="font-medium">
-                        <div>
-                          <div className="font-medium text-[#5e8b7e]">{assignment.title}</div>
-                          {assignment.courseId && (
-                            <div className="text-xs text-[#5e8b7e]/70 flex items-center mt-1">
-                              <BookOpen className="h-3 w-3 mr-1" />
-                              {getCourseName(assignment.courseId)}
-                            </div>
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden">
+                {sortedAssignments.map(renderMobileAssignmentCard)}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[300px]">Assignment</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Points</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedAssignments.map((assignment) => (
+                      <TableRow
+                        key={assignment.id}
+                        className={isOverdue(assignment.dueDate, assignment.status) ? "bg-red-50" : undefined}
+                      >
+                        <TableCell className="font-medium">
+                          <div>
+                            <div className="font-medium text-[#5e8b7e]">{assignment.title}</div>
+                            {assignment.courseId && (
+                              <div className="text-xs text-[#5e8b7e]/70 flex items-center mt-1">
+                                <BookOpen className="h-3 w-3 mr-1" />
+                                {getCourseName(assignment.courseId)}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {getStudentNames(assignment.studentIds).map((name, index) => (
+                              <Badge key={index} className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5">
+                                {name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Calendar className="h-3 w-3 mr-1 text-[#5e8b7e]/70" />
+                            <span
+                              className={
+                                isOverdue(assignment.dueDate, assignment.status) ? "text-red-600 font-medium" : ""
+                              }
+                            >
+                              {format(parseISO(assignment.dueDate), "MMM d, yyyy")}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge className={getStatusBadgeClass(assignment.status)}>{assignment.status}</Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          {assignment.status === "Graded" && assignment.pointsEarned !== undefined ? (
+                            <span className="font-medium">
+                              {assignment.pointsEarned} / {assignment.pointsPossible}
+                            </span>
+                          ) : (
+                            <span>{assignment.pointsPossible} pts</span>
                           )}
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {getStudentNames(assignment.studentIds).map((name, index) => (
-                            <Badge key={index} className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5">
-                              {name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1 text-[#5e8b7e]/70" />
-                          <span
-                            className={
-                              isOverdue(assignment.dueDate, assignment.status) ? "text-red-600 font-medium" : ""
-                            }
-                          >
-                            {format(parseISO(assignment.dueDate), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge className={getStatusBadgeClass(assignment.status)}>{assignment.status}</Badge>
-                      </TableCell>
-
-                      <TableCell>
-                        {assignment.status === "Graded" && assignment.pointsEarned !== undefined ? (
-                          <span className="font-medium">
-                            {assignment.pointsEarned} / {assignment.pointsPossible}
-                          </span>
-                        ) : (
-                          <span>{assignment.pointsPossible} pts</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditAssignment(assignment)}
-                              className="h-8 w-8 p-0 text-[#5e8b7e]"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <form
-                              onSubmit={e => {
-                                if (!confirm("Are you sure you want to delete this assignment?")) {
-                                  e.preventDefault();
-                                }
-                              }}
-                              action={deleteAssignment}
-                            >
-                              <input type="hidden" name="assignmentId" value={assignment.id} />
+                        <TableCell className="text-right">
+                            <div className="flex justify-end space-x-2">
                               <Button
-                                type="submit"
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-red-500"
+                                onClick={() => handleEditAssignment(assignment)}
+                                className="h-8 w-8 p-0 text-[#5e8b7e]"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Edit className="h-4 w-4" />
                               </Button>
-                            </form>
-                          </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                              <form
+                                onSubmit={e => {
+                                  if (!confirm("Are you sure you want to delete this assignment?")) {
+                                    e.preventDefault();
+                                  }
+                                }}
+                                action={deleteAssignment}
+                              >
+                                <input type="hidden" name="assignmentId" value={assignment.id} />
+                                <Button
+                                  type="submit"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-500"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </form>
+                            </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
               <div className="text-[#5e8b7e] mb-4">
-                <BookOpen className="h-16 w-16 mx-auto opacity-60" />
-                <h3 className="mt-3 text-xl font-medium">
+                <BookOpen className="h-12 w-12 md:h-16 md:w-16 mx-auto opacity-60" />
+                <h3 className="mt-3 text-lg md:text-xl font-medium">
                   {searchQuery || statusFilter !== "all"
                     ? "No assignments match your filters"
                     : "No assignments here yet!"}
                 </h3>
               </div>
-              <p className="text-[#5e8b7e]/70 max-w-md mb-6">
+              <p className="text-sm md:text-base text-[#5e8b7e]/70 max-w-md mb-6 px-4">
                 {searchQuery || statusFilter !== "all"
                   ? "Try adjusting your filters to see more assignments."
                   : `Get started by creating your first assignment for ${selectedStudent === "all" ? "your students" : students.find(s => s.id === selectedStudent)?.name}.`}
@@ -329,7 +440,7 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
                 {(searchQuery || statusFilter !== "all") && (
                   <Button
                     variant="outline"
-                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]"
+                    className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6] text-sm"
                     onClick={() => {
                       setSearchQuery("")
                       setStatusFilter("all")
@@ -342,7 +453,7 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
                 {!searchQuery && statusFilter === "all" && (
                   <Button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-white"
+                    className="bg-[#5e8b7e] hover:bg-[#4a6e63] text-white text-sm"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Create New Assignment

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useTransition } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Plus, Edit, Trash2, Check, X, Loader2, Calendar, BookOpen } from "lucide-react"
+import { Plus, Edit, Trash2, Check, X, Loader2, Calendar, BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button"
 import { useStore, type Lesson, type Student, type Assignment } from "@/lib/store"
 import { LessonModal } from "./lesson-modal"
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "./ui/badge"
 import { useRouter } from "next/navigation"
 import { deleteLesson, toggleLessonComplete } from "@/app/calendar/actions"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
 // Colors from the flower logo
 const logoColors = {
@@ -36,6 +37,9 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
   const [isPending, startTransition] = useTransition()
   const [pendingLessonId, setPendingLessonId] = useState<string | null>(null)
   
+  // Mobile state
+  const [mobileSelectedDay, setMobileSelectedDay] = useState<Date>(currentDate)
+  
   // Use props data instead of Zustand store
   const students = userStudents
   const lessons = initialLessons
@@ -55,20 +59,6 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
   const daysOfWeek = useMemo(() => 
     Array.from({ length: 5 }).map((_, index) => addDays(weekStart, index)), 
   [weekStart])
-
-  // Remove the timeSlots state since we're not using it anymore
-  // const timeSlots = useMemo(() => {
-  //   // Generate half-hour time slots from 8:00 AM to 8:00 PM
-  //   const slots = [];
-  //   for (let hour = 8; hour <= 20; hour++) {
-  //     for (let minute of [0, 30]) {
-  //       const time = new Date();
-  //       time.setHours(hour, minute, 0, 0);
-  //       slots.push(time);
-  //     }
-  //   }
-  //   return slots;
-  // }, [])
 
   // Get student name for display - memoize this calculation
   const studentName = useMemo(() => {
@@ -145,6 +135,25 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
       {} as Record<string, Assignment[]>,
     )
   }, [daysOfWeek, filteredAssignments])
+
+  // Mobile navigation handlers
+  const handleMobilePreviousDay = useCallback(() => {
+    const newDate = new Date(mobileSelectedDay)
+    newDate.setDate(mobileSelectedDay.getDate() - 1)
+    // Skip weekends
+    if (newDate.getDay() === 0) newDate.setDate(newDate.getDate() - 2) // Sunday -> Friday
+    if (newDate.getDay() === 6) newDate.setDate(newDate.getDate() - 1) // Saturday -> Friday
+    setMobileSelectedDay(newDate)
+  }, [mobileSelectedDay])
+
+  const handleMobileNextDay = useCallback(() => {
+    const newDate = new Date(mobileSelectedDay)
+    newDate.setDate(mobileSelectedDay.getDate() + 1)
+    // Skip weekends
+    if (newDate.getDay() === 6) newDate.setDate(newDate.getDate() + 2) // Saturday -> Monday
+    if (newDate.getDay() === 0) newDate.setDate(newDate.getDate() + 1) // Sunday -> Monday
+    setMobileSelectedDay(newDate)
+  }, [mobileSelectedDay])
 
   // Handle adding a new event - show choice modal
   const handleAddEvent = useCallback((day: Date) => {
@@ -302,205 +311,301 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
     [students],
   )
 
-  return (
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-800">Weekly Calendar</h1>
-            <p className="text-[#333]">Viewing schedule for {studentName}</p>
+  // Render lesson component
+  const renderLesson = (lesson: Lesson) => {
+    const startTime = parseISO(lesson.startDate)
+    const endTime = parseISO(lesson.endDate)
+    const isCurrentlyProcessing = pendingLessonId === lesson.id;
+
+    return (
+      <div
+        key={lesson.id}
+        onClick={() => handleEditLesson(lesson)}
+        className={cn(
+          "rounded-md text-sm px-3 py-2 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2",
+          lesson.completed 
+            ? "bg-[#e6f4ea] border-l-4 border-l-green-500" 
+            : "bg-[#f0f4f2]"
+        )}
+      >
+        {lesson.completed && (
+          <div className="bg-green-100 rounded-t-md mx-[-12px] mt-[-8px] mb-2 px-3 py-1 text-xs text-green-800 font-medium border-b border-green-200 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            COMPLETED
+          </div>
+        )}
+        <div className="flex justify-between items-start">
+          <div className="font-medium text-[#5e8b7e] flex-1">
+            {lesson.subjectName}
+          </div>
+          <div className="flex gap-1 mt-0.5">
+            {/* Toggle complete button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={`h-8 w-8 p-0 ${lesson.completed ? 'text-green-600 bg-green-50 border border-green-200 rounded-full' : 'text-gray-400 hover:text-green-600 hover:bg-green-50 hover:border hover:border-green-200 hover:rounded-full'}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleComplete(lesson.id, lesson.completed, e);
+              }}
+              disabled={isPending && isCurrentlyProcessing}
+            >
+              {isPending && isCurrentlyProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+            </Button>
+            
+            {/* Delete button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteLesson(lesson.id, e);
+              }}
+              disabled={isPending && isCurrentlyProcessing}
+            >
+              {isPending && isCurrentlyProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </Button>
           </div>
         </div>
+          
+        <div className="text-xs text-[#5e8b7e] mt-1 font-medium">
+          {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          {/* Day headers */}
-          {daysOfWeek.map((day, index) => {
-            const dayName = format(day, "EEEE").toLowerCase()
-            const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
-
-            return (
-              <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
-                <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
-                <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
-                <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
-              </div>
-            )
-          })}
-
-          {/* Calendar cells */}
-          {daysOfWeek.map((day, index) => {
-            const dayKey = format(day, "yyyy-MM-dd")
-            const dayLessons = lessonsByDay[dayKey] || []
-            const dayAssignments = assignmentsByDay[dayKey] || []
-            const dayName = format(day, "EEEE").toLowerCase()
-            const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
-            const isToday = isSameDay(day, new Date())
-            const hasEvents = dayLessons.length > 0 || dayAssignments.length > 0
-
-            return (
-              <div
-                key={`cell-${index}`}
-                className={cn(
-                  "min-h-[400px] border rounded-lg p-2 relative",
-                  colorSet.border,
-                  colorSet.bg,
-                  "bg-opacity-20",
-                  isToday && "bg-opacity-40",
-                )}
+        {/* Student tags */}
+        {lesson.studentIds.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {lesson.studentIds.map((id: string) => (
+              <Badge
+                key={id}
+                className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5 font-normal"
               >
-                {hasEvents ? (
-                  <div className="space-y-2">
-                    {/* Render lessons */}
-                    {dayLessons.map((lesson) => {
-                      const startTime = parseISO(lesson.startDate)
-                      const endTime = parseISO(lesson.endDate)
-                      const isCurrentlyProcessing = pendingLessonId === lesson.id;
+                {getStudentName(id)}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-                      return (
-                        <div
-                          key={lesson.id}
-                          onClick={() => handleEditLesson(lesson)}
-                          className={cn(
-                            "rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5",
-                            lesson.completed 
-                              ? "bg-[#e6f4ea] border-l-4 border-l-green-500" 
-                              : "bg-[#f0f4f2]"
-                          )}
-                        >
-                          {lesson.completed && (
-                            <div className="bg-green-100 rounded-t-md mx-[-8px] mt-[-4px] mb-1 px-2 py-0.5 text-xs text-green-800 font-medium border-b border-green-200 flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                              </svg>
-                              COMPLETED
-                            </div>
-                          )}
-                          <div className="flex justify-between items-start">
-                            <div className="font-medium text-[#5e8b7e] flex-1">
-                              {lesson.subjectName}
-                            </div>
-                            <div className="flex gap-1 mt-0.5">
-                              {/* Toggle complete button */}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 w-6 p-0 ${lesson.completed ? 'text-green-600 bg-green-50 border border-green-200 rounded-full' : 'text-gray-400 hover:text-green-600 hover:bg-green-50 hover:border hover:border-green-200 hover:rounded-full'}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleComplete(lesson.id, lesson.completed, e);
-                                }}
-                                disabled={isPending && isCurrentlyProcessing}
-                              >
-                                {isPending && isCurrentlyProcessing ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Check className="h-3 w-3" />
-                                )}
-                              </Button>
-                              
-                              {/* Delete button */}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteLesson(lesson.id, e);
-                                }}
-                                disabled={isPending && isCurrentlyProcessing}
-                              >
-                                {isPending && isCurrentlyProcessing ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                            
-                          <div className="text-xs text-[#5e8b7e] mt-1 font-medium">
-                            {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
-                          </div>
+        {lesson.description && (
+          <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
+        )}
+      </div>
+    )
+  }
 
-                          {/* Student tags */}
-                          {lesson.studentIds.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {lesson.studentIds.map((id: string) => (
-                                <Badge
-                                  key={id}
-                                  className="bg-[#e2f0e6] text-[#5e8b7e] rounded-full text-xs px-2 py-0.5 font-normal"
-                                >
-                                  {getStudentName(id)}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+  // Render assignment component
+  const renderAssignment = (assignment: Assignment) => {
+    const dueDate = parseISO(assignment.dueDate)
+    const statusColor = assignment.status === "Graded" 
+      ? "bg-green-100 text-green-800 border-green-200"
+      : assignment.status === "Submitted"
+      ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+      : "bg-gray-100 text-gray-800 border-gray-200"
 
-                          {lesson.description && (
-                            <div className="text-xs mt-1 line-clamp-2 text-[#333]/80">{lesson.description}</div>
-                          )}
-                        </div>
-                      )
-                    })}
-                    
-                    {/* Render assignments */}
-                    {dayAssignments.map((assignment) => {
-                      const dueDate = parseISO(assignment.dueDate)
-                      const statusColor = assignment.status === "Graded" 
-                        ? "bg-green-100 text-green-800 border-green-200"
-                        : assignment.status === "Submitted"
-                        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                        : "bg-gray-100 text-gray-800 border-gray-200"
+    return (
+      <div
+        key={`assignment-${assignment.id}`}
+        onClick={() => router.push('/assignments')}
+        className="rounded-md text-sm px-3 py-2 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2 bg-blue-50 border-l-4 border-l-blue-500"
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-1.5">
+            <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+            <span className="font-medium text-blue-900">{assignment.title}</span>
+          </div>
+          <Badge className={cn("text-xs px-1.5 py-0", statusColor)}>
+            {assignment.status}
+          </Badge>
+        </div>
+        
+        <div className="text-xs text-blue-700 mt-1 font-medium">
+          Due by {format(dueDate, "h:mm a")}
+        </div>
 
-                      return (
-                        <div
-                          key={`assignment-${assignment.id}`}
-                          onClick={() => router.push('/assignments')}
-                          className="rounded-md text-sm px-2 py-1 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2.5 bg-blue-50 border-l-4 border-l-blue-500"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-1.5">
-                              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
-                              <span className="font-medium text-blue-900">{assignment.title}</span>
-                            </div>
-                            <Badge className={cn("text-xs px-1.5 py-0", statusColor)}>
-                              {assignment.status}
-                            </Badge>
-                          </div>
-                          
-                          <div className="text-xs text-blue-700 mt-1 font-medium">
-                            Due by {format(dueDate, "h:mm a")}
-                          </div>
+        {/* Student tags */}
+        {assignment.studentIds.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {assignment.studentIds.map((id: string) => (
+              <Badge
+                key={id}
+                className="bg-blue-100 text-blue-700 rounded-full text-xs px-2 py-0.5 font-normal"
+              >
+                {getStudentName(id)}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-                          {/* Student tags */}
-                          {assignment.studentIds.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {assignment.studentIds.map((id: string) => (
-                                <Badge
-                                  key={id}
-                                  className="bg-blue-100 text-blue-700 rounded-full text-xs px-2 py-0.5 font-normal"
-                                >
-                                  {getStudentName(id)}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+        {assignment.pointsPossible > 0 && (
+          <div className="text-xs mt-1 text-blue-600">
+            {assignment.status === "Graded" && assignment.pointsEarned !== undefined
+              ? `${assignment.pointsEarned}/${assignment.pointsPossible} points`
+              : `${assignment.pointsPossible} points`}
+          </div>
+        )}
+      </div>
+    )
+  }
 
-                          {assignment.pointsPossible > 0 && (
-                            <div className="text-xs mt-1 text-blue-600">
-                              {assignment.status === "Graded" && assignment.pointsEarned !== undefined
-                                ? `${assignment.pointsEarned}/${assignment.pointsPossible} points`
-                                : `${assignment.pointsPossible} points`}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-6">
+  // Mobile day view
+  const renderMobileDayView = () => {
+    const dayKey = format(mobileSelectedDay, "yyyy-MM-dd")
+    const dayLessons = lessonsByDay[dayKey] || []
+    const dayAssignments = assignmentsByDay[dayKey] || []
+    const dayName = format(mobileSelectedDay, "EEEE").toLowerCase()
+    const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+    const hasEvents = dayLessons.length > 0 || dayAssignments.length > 0
+
+    return (
+      <div className="space-y-4">
+        {/* Mobile Day Navigation */}
+        <Card className={cn("border-2", colorSet.border)}>
+          <CardHeader className={cn("pb-3", colorSet.bg)}>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleMobilePreviousDay}
+                className={cn("h-8 w-8", colorSet.border, colorSet.text)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="text-center">
+                <div className={cn("font-semibold text-lg", colorSet.text)}>
+                  {format(mobileSelectedDay, "EEEE")}
+                </div>
+                <div className={cn("text-sm", colorSet.text)}>
+                  {format(mobileSelectedDay, "MMMM d, yyyy")}
+                </div>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleMobileNextDay}
+                className={cn("h-8 w-8", colorSet.border, colorSet.text)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-4">
+            {hasEvents ? (
+              <div className="space-y-2">
+                {/* Render lessons */}
+                {dayLessons.map(renderLesson)}
+                
+                {/* Render assignments */}
+                {dayAssignments.map(renderAssignment)}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-[#5e8b7e]/30 mb-3 mx-auto" />
+                <p className="text-[#5e8b7e] font-medium mb-2">Your calendar is clear!</p>
+                <p className="text-[#5e8b7e]/60 text-sm mb-4">
+                  No lessons scheduled for {format(mobileSelectedDay, "EEEE")}.
+                </p>
+                <Button
+                  size="sm"
+                  className={cn(
+                    "px-4",
+                    colorSet.text.replace("text", "bg"),
+                    "hover:opacity-90 text-white",
+                  )}
+                  onClick={() => handleAddEvent(mobileSelectedDay)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Event
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Floating Add Button */}
+        <div className="fixed bottom-6 right-6 z-10">
+          <Button
+            size="lg"
+            className={cn(
+              "h-14 w-14 rounded-full p-0 shadow-lg",
+              colorSet.text.replace("text", "bg"),
+              "hover:opacity-90 text-white",
+            )}
+            onClick={() => handleAddEvent(mobileSelectedDay)}
+          >
+            <Plus className="h-6 w-6" />
+            <span className="sr-only">Add event</span>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop week view
+  const renderDesktopWeekView = () => {
+    return (
+      <div className="grid grid-cols-5 gap-4">
+        {/* Day headers */}
+        {daysOfWeek.map((day, index) => {
+          const dayName = format(day, "EEEE").toLowerCase()
+          const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+
+          return (
+            <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
+              <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
+              <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
+              <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
+            </div>
+          )
+        })}
+
+        {/* Calendar cells */}
+        {daysOfWeek.map((day, index) => {
+          const dayKey = format(day, "yyyy-MM-dd")
+          const dayLessons = lessonsByDay[dayKey] || []
+          const dayAssignments = assignmentsByDay[dayKey] || []
+          const dayName = format(day, "EEEE").toLowerCase()
+          const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+          const isToday = isSameDay(day, new Date())
+          const hasEvents = dayLessons.length > 0 || dayAssignments.length > 0
+
+          return (
+            <div
+              key={`cell-${index}`}
+              className={cn(
+                "min-h-[400px] border rounded-lg p-2 relative",
+                colorSet.border,
+                colorSet.bg,
+                "bg-opacity-20",
+                isToday && "bg-opacity-40",
+              )}
+            >
+              {hasEvents ? (
+                <div className="space-y-2">
+                  {/* Render lessons */}
+                  {dayLessons.map(renderLesson)}
+                  
+                  {/* Render assignments */}
+                  {dayAssignments.map(renderAssignment)}
+                </div>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center py-6">
                   <Calendar className="h-12 w-12 text-[#5e8b7e]/30 mb-3" />
                   <p className="text-[#5e8b7e] font-medium mb-2">Your calendar is clear for this day!</p>
                   <p className="text-[#5e8b7e]/60 text-sm mb-4">No lessons scheduled for {format(day, "EEEE")}.</p>
@@ -517,49 +622,70 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
                     Add Event
                   </Button>
                 </div>
+              )}
+
+              <Button
+                size="sm"
+                className={cn(
+                  "absolute bottom-2 right-2 h-8 w-8 rounded-full p-0",
+                  colorSet.text.replace("text", "bg"),
+                  "hover:opacity-90 text-white",
                 )}
-
-                <Button
-                  size="sm"
-                  className={cn(
-                    "absolute bottom-2 right-2 h-8 w-8 rounded-full p-0",
-                    colorSet.text.replace("text", "bg"),
-                    "hover:opacity-90 text-white",
-                  )}
-                  onClick={() => handleAddEvent(day)}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="sr-only">Add lesson</span>
-                </Button>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Choice Modal */}
-        <AddEventChoiceModal
-          open={isChoiceModalOpen}
-          onOpenChange={setIsChoiceModalOpen}
-          onChooseAssignment={handleChooseAssignment}
-          onChooseLesson={handleChooseLesson}
-        />
-
-        {/* Lesson Modal */}
-        <LessonModal
-          isOpen={isLessonModalOpen}
-          onClose={handleLessonModalClose}
-          selectedDate={selectedDate}
-          editingLesson={editingLesson}
-          students={students}
-        />
-        
-        {/* Assignment Modal */}
-        <CalendarAssignmentModal
-          open={isAssignmentModalOpen}
-          onOpenChange={setIsAssignmentModalOpen}
-          selectedDate={selectedDate}
-          students={students}
-        />
+                onClick={() => handleAddEvent(day)}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="sr-only">Add lesson</span>
+              </Button>
+            </div>
+          )
+        })}
       </div>
+    )
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold text-slate-800">Weekly Calendar</h1>
+          <p className="text-sm md:text-base text-[#333]">Viewing schedule for {studentName}</p>
+        </div>
+      </div>
+
+      {/* Mobile Day View */}
+      <div className="md:hidden">
+        {renderMobileDayView()}
+      </div>
+
+      {/* Desktop Week View */}
+      <div className="hidden md:block">
+        {renderDesktopWeekView()}
+      </div>
+
+      {/* Choice Modal */}
+      <AddEventChoiceModal
+        open={isChoiceModalOpen}
+        onOpenChange={setIsChoiceModalOpen}
+        onChooseAssignment={handleChooseAssignment}
+        onChooseLesson={handleChooseLesson}
+      />
+
+      {/* Lesson Modal */}
+      <LessonModal
+        isOpen={isLessonModalOpen}
+        onClose={handleLessonModalClose}
+        selectedDate={selectedDate}
+        editingLesson={editingLesson}
+        students={students}
+      />
+      
+      {/* Assignment Modal */}
+      <CalendarAssignmentModal
+        open={isAssignmentModalOpen}
+        onOpenChange={setIsAssignmentModalOpen}
+        selectedDate={selectedDate}
+        students={students}
+      />
+    </div>
   )
 }
