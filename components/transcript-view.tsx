@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Printer, FileDown, Filter, Plus, RefreshCcw, ScrollText, Edit2, Trash2 } from "lucide-react"
+import { Printer, FileDown, Filter, Plus, ScrollText, Edit2, Trash2 } from "lucide-react"
 import { useStore, type Course, type Student } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -41,10 +41,12 @@ export function TranscriptView() {
   
   // State for controlling the AddCourseModal
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false)
+  const [addModalResetKey, setAddModalResetKey] = useState(0)
   
   // State for controlling the EditCourseModal
   const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false)
   const [courseToEdit, setCourseToEdit] = useState<any>(null)
+  const [modalResetKey, setModalResetKey] = useState(0)
   
   // State for controlling the DeleteCourseDialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -192,20 +194,43 @@ export function TranscriptView() {
   
   // Force a refresh of courses after modal closes
   const handleModalOpenChange = (open: boolean) => {
-    setIsAddCourseModalOpen(open);
-    if (!open && !isLoading) {
-      triggerRefresh();
+    if (!open) {
+      // First close the modal
+      setIsAddCourseModalOpen(false);
+      
+      // Force modal reset by changing key after a short delay
+      setTimeout(() => {
+        setAddModalResetKey(prev => prev + 1);
+      }, 100);
+      
+      // Trigger refresh if not loading
+      if (!isLoading) {
+        triggerRefresh();
+      }
+    } else {
+      setIsAddCourseModalOpen(open);
     }
   };
   
   // Handle edit modal close
   const handleEditModalOpenChange = (open: boolean) => {
-    setIsEditCourseModalOpen(open);
     if (!open) {
-      setCourseToEdit(null);
+      // First close the modal
+      setIsEditCourseModalOpen(false);
+      
+      // Reset the course data after a short delay
+      setTimeout(() => {
+        setCourseToEdit(null);
+        // Force modal reset by changing key
+        setModalResetKey(prev => prev + 1);
+      }, 100);
+      
+      // Trigger refresh if not loading
       if (!isLoading) {
         triggerRefresh();
       }
+    } else {
+      setIsEditCourseModalOpen(open);
     }
   };
   
@@ -222,8 +247,17 @@ export function TranscriptView() {
   
   // Handle edit course
   const handleEditCourse = (course: any) => {
-    setCourseToEdit(course);
-    setIsEditCourseModalOpen(true);
+    // Make sure modal is fully closed first
+    if (isEditCourseModalOpen) {
+      setIsEditCourseModalOpen(false);
+      setTimeout(() => {
+        setCourseToEdit(course);
+        setIsEditCourseModalOpen(true);
+      }, 200);
+    } else {
+      setCourseToEdit(course);
+      setIsEditCourseModalOpen(true);
+    }
   };
   
   // Handle delete course
@@ -232,12 +266,7 @@ export function TranscriptView() {
     setIsDeleteDialogOpen(true);
   };
 
-  // Manual refresh button handler
-  const handleRefresh = () => {
-    if (!isLoading) {
-      triggerRefresh();
-    }
-  };
+
 
   // Group courses by academic year
   const coursesByYear = useMemo(() => {
@@ -381,15 +410,7 @@ export function TranscriptView() {
             Add New Course
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7]"
-          >
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
+
 
           <div className="flex items-center gap-2">
             <span className="text-sm text-[#5e8b7e]">Academic Year:</span>
@@ -441,6 +462,7 @@ export function TranscriptView() {
 
       {/* Render the AddCourseModal with the correct database ID */}
       <AddCourseModal 
+        key={`add-modal-${addModalResetKey}`}
         isOpen={isAddCourseModalOpen} 
         onOpenChange={handleModalOpenChange} 
         studentIdForCourse={databaseStudentId} 
@@ -448,6 +470,7 @@ export function TranscriptView() {
       
       {/* Render the EditCourseModal */}
       <EditCourseModal
+        key={`edit-modal-${modalResetKey}`}
         isOpen={isEditCourseModalOpen}
         onOpenChange={handleEditModalOpenChange}
         course={courseToEdit}

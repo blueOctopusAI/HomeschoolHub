@@ -8,8 +8,8 @@ import { useSyncStoreWithSupabase } from "@/lib/hooks/use-sync-store"
 
 // List of valid views
 const VALID_VIEWS = [
-  "dashboard", "calendar", "assignments", "checklist", 
-  "reports", "portfolio", "compliance", "transcript", "settings"
+  "dashboard", "students", "calendar", "assignments", "checklist", 
+  "portfolio", "compliance", "transcript", "settings"
 ] as const
 
 export function MainLayout({ children }: { children: React.ReactNode }) {

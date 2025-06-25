@@ -100,6 +100,10 @@ export function EditCourseModal({ isOpen, onOpenChange, course }: EditCourseModa
       setAcademicYear(course.academicYear || "2024-2025")
       setIsSubmitting(false)
       hasShownSuccessToast.current = false
+    } else if (!isOpen) {
+      // Reset submission state when modal closes
+      setIsSubmitting(false)
+      hasShownSuccessToast.current = false
     }
   }, [isOpen, course])
 

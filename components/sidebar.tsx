@@ -8,7 +8,6 @@ import {
   BookOpen,
   Calendar,
   CheckSquare,
-  FileText,
   Home,
   ScrollText,
   Settings,
@@ -100,11 +99,6 @@ export function Sidebar() {
       name: "Checklist",
       icon: <CheckSquare className="h-5 w-5" />,
       value: "checklist",
-    },
-    {
-      name: "Reports",
-      icon: <FileText className="h-5 w-5" />,
-      value: "reports",
     },
     {
       name: "Portfolio",
