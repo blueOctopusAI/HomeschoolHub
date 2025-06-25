@@ -9,6 +9,7 @@ interface PrintableTranscriptProps {
   gpa: string
   courses: Course[]
   totalCredits: number
+  schoolName?: string
 }
 
 export function PrintableTranscript({
@@ -18,13 +19,17 @@ export function PrintableTranscript({
   gpa,
   courses,
   totalCredits,
+  schoolName,
 }: PrintableTranscriptProps) {
   const currentDate = new Date().toLocaleDateString()
 
   return (
     <div className="p-8 bg-white max-w-4xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-[#5e8b7e] mb-1">Homeschool Academic Transcript</h1>
+        {schoolName && (
+          <h2 className="text-xl font-semibold text-[#5e8b7e] mb-2">{schoolName}</h2>
+        )}
+        <h1 className="text-2xl font-bold text-[#5e8b7e] mb-1">Academic Transcript</h1>
         <p className="text-[#5e8b7e]/70">{schoolYear} School Year</p>
       </div>
 

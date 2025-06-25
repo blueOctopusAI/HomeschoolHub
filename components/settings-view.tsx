@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -16,12 +17,14 @@ import { CleanupDatabaseButton } from "./cleanup-database-button"
 
 export function SettingsView() {
   const [activeTab, setActiveTab] = useState("account")
+  const [isLoading, setIsLoading] = useState(false)
 
   // Account settings state
   const [accountSettings, setAccountSettings] = useState({
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
+    name: "",
+    email: "",
     timezone: "America/New_York",
+    schoolName: "",
   })
 
   // Notification settings state
@@ -30,6 +33,41 @@ export function SettingsView() {
     lessonReminders: true,
     studentProgress: false,
   })
+
+  // Fetch user profile data on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          // Get user email from auth
+          setAccountSettings(prev => ({ ...prev, email: user.email || "" }))
+          
+          // Get profile data
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, timezone, school_name')
+            .eq('id', user.id)
+            .single()
+          
+          if (profile) {
+            setAccountSettings(prev => ({
+              ...prev,
+              name: profile.full_name || "",
+              timezone: profile.timezone || "America/New_York",
+              schoolName: profile.school_name || "",
+            }))
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+      }
+    }
+    
+    fetchProfile()
+  }, [])
 
   // Handle account settings change
   const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,9 +87,34 @@ export function SettingsView() {
   }
 
   // Handle save account settings
-  const handleSaveAccount = () => {
-    // In a real app, this would save to a database or API
-    alert("Account settings saved!")
+  const handleSaveAccount = async () => {
+    setIsLoading(true)
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: accountSettings.name,
+            timezone: accountSettings.timezone,
+            school_name: accountSettings.schoolName,
+          })
+          .eq('id', user.id)
+        
+        if (error) {
+          alert("Error saving settings: " + error.message)
+        } else {
+          alert("Account settings saved successfully!")
+        }
+      }
+    } catch (error) {
+      console.error("Error saving account settings:", error)
+      alert("An error occurred while saving settings")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Handle save notification preferences
@@ -140,6 +203,23 @@ export function SettingsView() {
                 </div>
 
                 <div className="grid gap-2">
+                  <Label htmlFor="schoolName" className="text-[#5e8b7e]">
+                    School Name
+                  </Label>
+                  <Input
+                    id="schoolName"
+                    name="schoolName"
+                    value={accountSettings.schoolName}
+                    onChange={handleAccountChange}
+                    className="border-[#5e8b7e]/20 bg-white"
+                    placeholder="Enter your homeschool name"
+                  />
+                  <p className="text-sm text-[#5e8b7e]/70">
+                    This will appear on transcripts and reports
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
                   <Label htmlFor="timezone" className="text-[#5e8b7e]">
                     Timezone
                   </Label>
@@ -160,9 +240,13 @@ export function SettingsView() {
                 </div>
               </div>
 
-              <Button onClick={handleSaveAccount} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
+              <Button 
+                onClick={handleSaveAccount} 
+                className="bg-[#5e8b7e] hover:bg-[#4a6e63]"
+                disabled={isLoading}
+              >
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {isLoading ? "Saving..." : "Save Changes"}
               </Button>
 
               <div className="pt-6 mt-6 border-t border-[#5e8b7e]/10">
