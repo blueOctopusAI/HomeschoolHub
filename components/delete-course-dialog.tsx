@@ -32,9 +32,14 @@ export function DeleteCourseDialog({ isOpen, onOpenChange, course }: DeleteCours
   const { toast } = useToast()
   const hasShownSuccessToast = useRef(false)
 
-  // Reset toast flag when dialog opens
+  // Reset state when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
+      hasShownSuccessToast.current = false
+      setIsDeleting(false)
+    } else {
+      // Reset deletion state when dialog closes
+      setIsDeleting(false)
       hasShownSuccessToast.current = false
     }
   }, [isOpen])

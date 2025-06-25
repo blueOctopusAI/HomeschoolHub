@@ -33,6 +33,18 @@ const gradeToPoints = (grade: string): number => {
   return gradeMap[grade] || 0
 }
 
+// Helper to check if a grade should be included in GPA calculation
+const isGradedCourse = (grade: string): boolean => {
+  const gradedGrades = [
+    "A+", "A", "A-",
+    "B+", "B", "B-",
+    "C+", "C", "C-",
+    "D+", "D", "D-",
+    "F"
+  ]
+  return gradedGrades.includes(grade)
+}
+
 export function TranscriptView() {
   // Use direct selectors from useStore instead of helper hooks for consistency
   const students = useStore((state) => state.students)
@@ -51,6 +63,7 @@ export function TranscriptView() {
   // State for controlling the DeleteCourseDialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [courseToDelete, setCourseToDelete] = useState<any>(null)
+  const [deleteModalResetKey, setDeleteModalResetKey] = useState(0)
   
   // State for courses fetched from Supabase
   const [databaseCourses, setDatabaseCourses] = useState<any[]>([])
@@ -236,12 +249,23 @@ export function TranscriptView() {
   
   // Handle delete dialog close
   const handleDeleteDialogOpenChange = (open: boolean) => {
-    setIsDeleteDialogOpen(open);
     if (!open) {
-      setCourseToDelete(null);
+      // First close the dialog
+      setIsDeleteDialogOpen(false);
+      
+      // Reset the course data after a short delay
+      setTimeout(() => {
+        setCourseToDelete(null);
+        // Force modal reset by changing key
+        setDeleteModalResetKey(prev => prev + 1);
+      }, 100);
+      
+      // Trigger refresh if not loading
       if (!isLoading) {
         triggerRefresh();
       }
+    } else {
+      setIsDeleteDialogOpen(open);
     }
   };
   
@@ -262,8 +286,17 @@ export function TranscriptView() {
   
   // Handle delete course
   const handleDeleteCourse = (course: any) => {
-    setCourseToDelete(course);
-    setIsDeleteDialogOpen(true);
+    // Make sure dialog is fully closed first
+    if (isDeleteDialogOpen) {
+      setIsDeleteDialogOpen(false);
+      setTimeout(() => {
+        setCourseToDelete(course);
+        setIsDeleteDialogOpen(true);
+      }, 200);
+    } else {
+      setCourseToDelete(course);
+      setIsDeleteDialogOpen(true);
+    }
   };
 
 
@@ -292,9 +325,12 @@ export function TranscriptView() {
       let totalCredits = 0
 
       yearCourses.forEach((course) => {
-        const points = gradeToPoints(course.grade)
-        totalPoints += points * course.credits
-        totalCredits += course.credits
+        // Only include courses with actual letter grades in GPA calculation
+        if (isGradedCourse(course.grade)) {
+          const points = gradeToPoints(course.grade)
+          totalPoints += points * course.credits
+          totalCredits += course.credits
+        }
       })
 
       stats[year] = {
@@ -310,16 +346,23 @@ export function TranscriptView() {
   const cumulativeStats = useMemo(() => {
     let totalPoints = 0
     let totalCredits = 0
+    let allCredits = 0 // Track all credits including non-graded courses
 
     studentCourses.forEach((course) => {
-      const points = gradeToPoints(course.grade)
-      totalPoints += points * course.credits
-      totalCredits += course.credits
+      allCredits += course.credits // Count all courses for total credits
+      
+      // Only include courses with actual letter grades in GPA calculation
+      if (isGradedCourse(course.grade)) {
+        const points = gradeToPoints(course.grade)
+        totalPoints += points * course.credits
+        totalCredits += course.credits
+      }
     })
 
     return {
       gpa: totalCredits > 0 ? totalPoints / totalCredits : 0,
-      credits: totalCredits,
+      credits: totalCredits, // Credits that count toward GPA
+      totalCredits: allCredits // All credits including non-graded courses
     }
   }, [studentCourses])
 
@@ -478,6 +521,7 @@ export function TranscriptView() {
       
       {/* Render the DeleteCourseDialog */}
       <DeleteCourseDialog
+        key={`delete-modal-${deleteModalResetKey}`}
         isOpen={isDeleteDialogOpen}
         onOpenChange={handleDeleteDialogOpenChange}
         course={courseToDelete}
@@ -639,7 +683,10 @@ export function TranscriptView() {
                       <span className="text-[#5e8b7e]/70">Total Courses:</span> {studentCourses.length}
                     </p>
                     <p>
-                      <span className="text-[#5e8b7e]/70">Total Credits:</span> {cumulativeStats.credits.toFixed(1)}
+                      <span className="text-[#5e8b7e]/70">Total Credits:</span> {cumulativeStats.totalCredits.toFixed(1)}
+                    </p>
+                    <p>
+                      <span className="text-[#5e8b7e]/70">GPA Credits:</span> {cumulativeStats.credits.toFixed(1)}
                     </p>
                     <p>
                       <span className="text-[#5e8b7e]/70">Cumulative GPA:</span> {cumulativeStats.gpa.toFixed(2)}
