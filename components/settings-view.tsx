@@ -12,7 +12,6 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Save, CreditCard, AlertTriangle, Trash2 } from "lucide-react"
-import { SeedDatabaseButton } from "./seed-database-button"
 import { CleanupDatabaseButton } from "./cleanup-database-button"
 
 export function SettingsView() {
@@ -169,35 +168,25 @@ export function SettingsView() {
               <div className="pt-6 mt-6 border-t border-[#5e8b7e]/10">
                 <h3 className="text-lg font-medium text-[#5e8b7e] mb-4">Database Management</h3>
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-[#5e8b7e]/70 mb-2">
-                      Use this button to seed the database with sample data for testing purposes. This will add sample
-                      students, lessons, courses, and assignments.
-                    </p>
-                    <SeedDatabaseButton />
-                  </div>
-                  
-                  <div className="pt-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-3">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                        <div className="text-sm">
-                          <p className="font-medium text-yellow-900 mb-1">Database Cleanup</p>
-                          <p className="text-yellow-700">
-                            If you're seeing data from students that no longer exist (orphaned records), 
-                            use this tool to clean up your database. This will remove:
-                          </p>
-                          <ul className="list-disc list-inside text-yellow-700 mt-2 space-y-1">
-                            <li>Lesson assignments for deleted students</li>
-                            <li>Assignment records for deleted students</li>
-                            <li>Course entries for deleted students</li>
-                            <li>Logged hours for deleted students</li>
-                          </ul>
-                        </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-3">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-yellow-900 mb-1">Database Cleanup</p>
+                        <p className="text-yellow-700">
+                          If you're seeing data from students that no longer exist (orphaned records), 
+                          use this tool to clean up your database. This will remove:
+                        </p>
+                        <ul className="list-disc list-inside text-yellow-700 mt-2 space-y-1">
+                          <li>Lesson assignments for deleted students</li>
+                          <li>Assignment records for deleted students</li>
+                          <li>Course entries for deleted students</li>
+                          <li>Logged hours for deleted students</li>
+                        </ul>
                       </div>
                     </div>
-                    <CleanupDatabaseButton />
                   </div>
+                  <CleanupDatabaseButton />
                 </div>
               </div>
             </CardContent>
