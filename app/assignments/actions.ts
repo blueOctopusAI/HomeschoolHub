@@ -169,6 +169,173 @@ export async function createAssignment(
 }
 
 /**
+ * Creates multiple assignments in a batch
+ */
+export async function createBatchAssignments(
+  prevState: ActionResult | undefined,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    // Create Supabase client
+    const supabase = await createSupabaseServerActionClient()
+    
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // Check if user is authenticated
+    if (!user) {
+      return {
+        success: false,
+        message: "User not authenticated."
+      }
+    }
+    
+    // Extract batch data from form
+    const batchDataString = formData.get('batchData')?.toString()
+    if (!batchDataString) {
+      return {
+        success: false,
+        message: "No assignments to create."
+      }
+    }
+    
+    let batchData: any[]
+    try {
+      batchData = JSON.parse(batchDataString)
+    } catch (e) {
+      return {
+        success: false,
+        message: "Invalid batch data format."
+      }
+    }
+    
+    if (!Array.isArray(batchData) || batchData.length === 0) {
+      return {
+        success: false,
+        message: "No assignments to create."
+      }
+    }
+    
+    // Validate all assignments first
+    const validatedAssignments = []
+    for (let i = 0; i < batchData.length; i++) {
+      const assignmentData = batchData[i]
+      const validationResult = assignmentSchema.safeParse(assignmentData)
+      
+      if (!validationResult.success) {
+        const errors = validationResult.error.flatten().fieldErrors
+        return {
+          success: false,
+          message: `Validation error in assignment ${i + 1}: ${Object.values(errors).flat().join(', ')}`,
+          errors
+        }
+      }
+      
+      validatedAssignments.push(validationResult.data)
+    }
+    
+    // Collect all unique student IDs to validate
+    const allStudentIds = [...new Set(
+      validatedAssignments.flatMap(a => a.studentIds.split(',').filter(Boolean))
+    )]
+    
+    // Validate that all students exist and belong to this user
+    const { data: validStudents, error: studentCheckError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('id', allStudentIds)
+    
+    if (studentCheckError) {
+      console.error("Error checking students:", studentCheckError)
+      return {
+        success: false,
+        message: "Failed to validate students."
+      }
+    }
+    
+    const validStudentIds = validStudents?.map(s => s.id) || []
+    const invalidStudentIds = allStudentIds.filter(id => !validStudentIds.includes(id))
+    
+    if (invalidStudentIds.length > 0) {
+      return {
+        success: false,
+        message: "Some selected students no longer exist or don't belong to your account."
+      }
+    }
+    
+    // Create all assignments
+    let createdCount = 0
+    const errors: string[] = []
+    
+    for (const assignment of validatedAssignments) {
+      const { studentIds, ...restOfData } = assignment
+      const studentIdArray = studentIds.split(',').filter(Boolean)
+      
+      // Insert the assignment
+      const { data: newAssignment, error } = await supabase
+        .from('assignments')
+        .insert({
+          user_id: user.id,
+          title: restOfData.title,
+          description: restOfData.description,
+          due_date: restOfData.dueDate,
+          status: restOfData.status,
+          points_possible: restOfData.pointsPossible,
+          course_id: (!restOfData.courseId || restOfData.courseId === 'None' || restOfData.courseId === 'none') ? null : restOfData.courseId,
+        })
+        .select('id')
+        .single()
+      
+      if (error) {
+        console.error("Error creating assignment:", error)
+        errors.push(`Failed to create "${restOfData.title}": ${error.message}`)
+        continue
+      }
+      
+      // Insert the student assignments
+      const assignmentStudentData = studentIdArray.map(studentId => ({
+        assignment_id: newAssignment.id,
+        student_id: studentId
+      }))
+      
+      const { error: studentError } = await supabase
+        .from('assignment_students')
+        .insert(assignmentStudentData)
+      
+      if (studentError) {
+        console.error("Error creating student assignments:", studentError)
+        errors.push(`Created "${restOfData.title}" but failed to assign to some students`)
+      } else {
+        createdCount++
+      }
+    }
+    
+    // Revalidate the assignments page
+    revalidatePath('/assignments')
+    revalidatePath('/student', 'layout')
+    
+    if (errors.length > 0) {
+      return {
+        success: false,
+        message: `Created ${createdCount} of ${validatedAssignments.length} assignments. Errors: ${errors.join('; ')}`
+      }
+    }
+    
+    return {
+      success: true,
+      message: `Successfully created ${createdCount} assignment${createdCount !== 1 ? 's' : ''}.`
+    }
+  } catch (error) {
+    console.error("Batch assignment creation error:", error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "An unexpected error occurred."
+    }
+  }
+}
+
+/**
  * Updates an existing assignment in the database
  */
 export async function updateAssignment(

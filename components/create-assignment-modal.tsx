@@ -148,6 +148,32 @@ export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection
           </div>
 
           <div className="grid gap-2">
+            <Label htmlFor="courseId" className="text-[#5e8b7e]">
+              Related Course
+            </Label>
+            <Select 
+              value={courseId || "None"} 
+              onValueChange={(value) => setCourseId(value === "None" ? null : value)} 
+              name="courseId"
+            >
+              <SelectTrigger id="courseId" className={`border-[#5e8b7e]/20 ${state?.errors?.courseId ? 'border-red-500' : ''}`}>
+                <SelectValue placeholder="Select a course (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="None">None</SelectItem>
+                {coursesForSelection.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {state?.errors?.courseId && (
+              <p className="text-red-500 text-xs mt-1">{state.errors.courseId[0]}</p>
+            )}
+          </div>
+
+          <div className="grid gap-2">
             <Label htmlFor="description" className="text-[#5e8b7e]">
               Description
             </Label>
@@ -278,32 +304,6 @@ export function CreateAssignmentModal({ open, onOpenChange, studentsForSelection
             </Select>
             {state?.errors?.status && (
               <p className="text-red-500 text-xs mt-1">{state.errors.status[0]}</p>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="courseId" className="text-[#5e8b7e]">
-              Related Course
-            </Label>
-            <Select 
-              value={courseId || "None"} 
-              onValueChange={(value) => setCourseId(value === "None" ? null : value)} 
-              name="courseId"
-            >
-              <SelectTrigger id="courseId" className={`border-[#5e8b7e]/20 ${state?.errors?.courseId ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="Select a course (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="None">None</SelectItem>
-                {coursesForSelection.map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {state?.errors?.courseId && (
-              <p className="text-red-500 text-xs mt-1">{state.errors.courseId[0]}</p>
             )}
           </div>
 

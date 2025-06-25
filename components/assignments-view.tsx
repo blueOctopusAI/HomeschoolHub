@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Calendar, Filter, Plus, Search, Edit, Trash2, SlidersHorizontal } from "lucide-react"
+import { BookOpen, Calendar, Filter, Plus, Search, Edit, Trash2, SlidersHorizontal, PlusSquare } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CreateAssignmentModal } from "./create-assignment-modal"
+import { BatchCreateAssignmentModal } from "./batch-create-assignment-modal"
 import { UpdateAssignmentModal } from "./update-assignment-modal"
 import { useStore, type Assignment, type Student, type Course } from "@/lib/store"
 import { deleteAssignment } from "@/app/assignments/actions"
@@ -33,6 +34,7 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
 
   // Local state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isBatchCreateModalOpen, setIsBatchCreateModalOpen] = useState(false)
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -139,6 +141,10 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
           <Button onClick={() => setIsCreateModalOpen(true)} className="bg-[#5e8b7e] hover:bg-[#4a6e63]">
             <Plus className="mr-2 h-4 w-4" />
             New Assignment
+          </Button>
+          <Button onClick={() => setIsBatchCreateModalOpen(true)} variant="outline" className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e2f0e6]">
+            <PlusSquare className="mr-2 h-4 w-4" />
+            Batch Create
           </Button>
         </div>
       </div>
@@ -351,6 +357,13 @@ export function AssignmentsView({ initialAssignments, userStudents, userCourses 
       <CreateAssignmentModal 
         open={isCreateModalOpen} 
         onOpenChange={setIsCreateModalOpen} 
+        studentsForSelection={students} 
+        coursesForSelection={courses} 
+      />
+
+      <BatchCreateAssignmentModal 
+        open={isBatchCreateModalOpen} 
+        onOpenChange={setIsBatchCreateModalOpen} 
         studentsForSelection={students} 
         coursesForSelection={courses} 
       />
