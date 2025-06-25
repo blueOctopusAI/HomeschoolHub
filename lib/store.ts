@@ -108,194 +108,18 @@ type Store = {
   setIsAuthLoading: (isLoading: boolean) => void
 }
 
-// Sample data
-const sampleStudents: Student[] = [
-  { id: "all", name: "All Students" },
-  { id: "bb0c2d70-4553-4c25-95f1-d4dbf38ec202", name: "Emma Johnson", gradeLevel: "3rd Grade", initials: "EJ" },
-  { id: "9948fed0-2182-43a2-b186-1331b083eecd", name: "Noah Williams", gradeLevel: "5th Grade", initials: "NW" },
-  { id: "57b063a8-fb4e-4421-bc15-7399601c7dc1", name: "Olivia Davis", gradeLevel: "7th Grade", initials: "OD" },
+// Initial data - will be populated from database
+const initialStudents: Student[] = [
+  { id: "all", name: "All Students" }
 ]
 
-const sampleSubjects: Subject[] = [
-  { id: "subject1", name: "Math", color: "#4CAF50" },
-  { id: "subject2", name: "Science", color: "#2196F3" },
-  { id: "subject3", name: "Language Arts", color: "#9C27B0" },
-  { id: "subject4", name: "History", color: "#FF9800" },
-  { id: "subject5", name: "Art", color: "#E91E63" },
-  { id: "subject6", name: "Music", color: "#00BCD4" },
-]
+const initialSubjects: Subject[] = []
 
-const today = new Date()
-const tomorrow = new Date(today)
-tomorrow.setDate(today.getDate() + 1)
-const yesterday = new Date(today)
-yesterday.setDate(today.getDate() - 1)
+const initialLessons: Lesson[] = []
 
-const sampleLessons: Lesson[] = [
-  {
-    id: "lesson1",
-    subjectId: "subject1",
-    subjectName: "Math",
-    subjectColor: "#4CAF50",
-    startDate: new Date(today.setHours(9, 0, 0, 0)).toISOString(),
-    endDate: new Date(today.setHours(10, 0, 0, 0)).toISOString(),
-    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "9948fed0-2182-43a2-b186-1331b083eecd"],
-    description: "Multiplication and division practice",
-    objectives: "Master multiplication tables 1-12",
-    materialsNeeded: "Workbook, pencils, calculator",
-    completed: false,
-    day_of_week: "Monday",
-  },
-  {
-    id: "lesson2",
-    subjectId: "subject2",
-    subjectName: "Science",
-    subjectColor: "#2196F3",
-    startDate: new Date(today.setHours(10, 30, 0, 0)).toISOString(),
-    endDate: new Date(today.setHours(11, 30, 0, 0)).toISOString(),
-    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "57b063a8-fb4e-4421-bc15-7399601c7dc1"],
-    description: "Plant life cycles",
-    objectives: "Understand the stages of plant growth",
-    materialsNeeded: "Seeds, soil, pots, water",
-    completed: true,
-    day_of_week: "Tuesday",
-  },
-  {
-    id: "lesson3",
-    subjectId: "subject3",
-    subjectName: "Language Arts",
-    subjectColor: "#9C27B0",
-    startDate: new Date(tomorrow.setHours(9, 0, 0, 0)).toISOString(),
-    endDate: new Date(tomorrow.setHours(10, 0, 0, 0)).toISOString(),
-    studentIds: ["9948fed0-2182-43a2-b186-1331b083eecd"],
-    description: "Reading comprehension",
-    objectives: "Identify main ideas and supporting details",
-    materialsNeeded: "Book, notebook, pencils",
-    completed: false,
-    day_of_week: "Wednesday",
-  },
-  {
-    id: "lesson4",
-    subjectId: "subject4",
-    subjectName: "History",
-    subjectColor: "#FF9800",
-    startDate: new Date(yesterday.setHours(13, 0, 0, 0)).toISOString(),
-    endDate: new Date(yesterday.setHours(14, 0, 0, 0)).toISOString(),
-    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "9948fed0-2182-43a2-b186-1331b083eecd", "57b063a8-fb4e-4421-bc15-7399601c7dc1"],
-    description: "Ancient civilizations",
-    objectives: "Compare and contrast ancient Egypt and Mesopotamia",
-    materialsNeeded: "Textbook, map, timeline",
-    completed: true,
-    day_of_week: "Thursday",
-  },
-]
+const initialCourses: Course[] = []
 
-const sampleCourses: Course[] = [
-  {
-    id: "course1",
-    name: "Algebra I",
-    category: "Mathematics",
-    term: "Full Year",
-    grade: "A",
-    credits: 1.0,
-    studentId: "bb0c2d70-4553-4c25-95f1-d4dbf38ec202",
-    academicYear: "2023-2024",
-  },
-  {
-    id: "course2",
-    name: "Biology",
-    category: "Science",
-    term: "Full Year",
-    grade: "B+",
-    credits: 1.0,
-    studentId: "student1",
-    academicYear: "2023-2024",
-  },
-  {
-    id: "course3",
-    name: "World Literature",
-    category: "Language Arts",
-    term: "Fall Semester",
-    grade: "A-",
-    credits: 0.5,
-    studentId: "9948fed0-2182-43a2-b186-1331b083eecd",
-    academicYear: "2023-2024",
-  },
-  {
-    id: "course4",
-    name: "American History",
-    category: "Social Studies",
-    term: "Spring Semester",
-    grade: "B",
-    credits: 0.5,
-    studentId: "student2",
-    academicYear: "2023-2024",
-  },
-  {
-    id: "course5",
-    name: "Pre-Calculus",
-    category: "Mathematics",
-    term: "Full Year",
-    grade: "A",
-    credits: 1.0,
-    studentId: "57b063a8-fb4e-4421-bc15-7399601c7dc1",
-    academicYear: "2024-2025",
-  },
-  {
-    id: "course6",
-    name: "Chemistry",
-    category: "Science",
-    term: "Full Year",
-    grade: "B+",
-    credits: 1.0,
-    studentId: "student3",
-    academicYear: "2024-2025",
-  },
-]
-
-const sampleAssignments: Assignment[] = [
-  {
-    id: "assignment1",
-    title: "Math Worksheet: Fractions",
-    description: "Complete problems 1-20 on fractions worksheet",
-    studentIds: ["bb0c2d70-4553-4c25-95f1-d4dbf38ec202", "9948fed0-2182-43a2-b186-1331b083eecd"],
-    dueDate: new Date(today.setDate(today.getDate() + 2)).toISOString(),
-    status: "Not Started",
-    pointsPossible: 100,
-    courseId: "course1",
-  },
-  {
-    id: "assignment2",
-    title: "Science Lab Report: Plant Growth",
-    description: "Write a lab report on the plant growth experiment",
-    studentIds: ["student1", "student3"],
-    dueDate: new Date(today.setDate(today.getDate() + 5)).toISOString(),
-    status: "Not Started",
-    pointsPossible: 50,
-    courseId: "course2",
-  },
-  {
-    id: "assignment3",
-    title: "Book Report: To Kill a Mockingbird",
-    description: "Write a 3-page report analyzing the main themes",
-    studentIds: ["student2"],
-    dueDate: new Date(today.setDate(today.getDate() - 1)).toISOString(),
-    status: "Submitted",
-    pointsPossible: 100,
-    courseId: "course3",
-  },
-  {
-    id: "assignment4",
-    title: "History Essay: Civil War",
-    description: "Write a 5-page essay on the causes of the Civil War",
-    studentIds: ["9948fed0-2182-43a2-b186-1331b083eecd", "57b063a8-fb4e-4421-bc15-7399601c7dc1"],
-    dueDate: new Date(today.setDate(today.getDate() - 5)).toISOString(),
-    status: "Graded",
-    pointsPossible: 100,
-    pointsEarned: 92,
-    courseId: "course4",
-  },
-]
+const initialAssignments: Assignment[] = []
 
 // Create store
 export const useStore = create<Store>((set) => ({
@@ -303,11 +127,11 @@ export const useStore = create<Store>((set) => ({
   currentView: "dashboard",
   currentDate: new Date(),
   selectedStudent: "all",
-  students: sampleStudents,
-  subjects: sampleSubjects,
-  lessons: sampleLessons,
-  courses: sampleCourses,
-  assignments: sampleAssignments,
+  students: initialStudents,
+  subjects: initialSubjects,
+  lessons: initialLessons,
+  courses: initialCourses,
+  assignments: initialAssignments,
 
   
   // Auth state (new)
