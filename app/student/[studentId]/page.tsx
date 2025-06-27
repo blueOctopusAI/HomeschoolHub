@@ -49,130 +49,55 @@ export default async function StudentPortalPage({ params }: StudentPortalPagePro
 
 
 
-  // First get the lesson_ids for this student using lesson_students table
-  const { data: studentLessons, error: studentLessonsError } = await supabase
-    .from("lesson_students")
-    .select("lesson_id")
-    .eq("student_id", student.id);
-
-  // Log any errors
-  if (studentLessonsError) {
-    console.error("Error fetching student lessons:", studentLessonsError);
-  }
-    
-  // Get array of lesson IDs
-  const lessonIds = studentLessons ? studentLessons.map(sl => sl.lesson_id) : [];
-
-  // If no lessons are associated with this student, try fetching all lessons for today
-  let todaysLessons = [];
-  let lessonsError = null;
-
-  if (lessonIds.length > 0) {
-    // Fetch lessons with the specific IDs
-    const { data, error } = await supabase
-      .from("lessons")
-      .select(`
-        id, 
-        subject_name,
-        subject_color,
-        description,
-        start_date,
-        end_date,
-        completed,
-        objectives,
-        materials_needed,
-        location
-      `)
-      .eq("user_id", user.id) // Parent owns the lesson
-      .in("id", lessonIds) // Use the actual lesson IDs
-      .order('start_date', { ascending: true });
-    
-    // Check if any of these lessons are for today
-    let todaysFilteredLessons = [];
-    if (data && data.length > 0) {
-      todaysFilteredLessons = data.filter(lesson => {
-        const lessonDate = new Date(lesson.start_date);
-        return lessonDate >= today && lessonDate < tomorrow;
-      });
-    }
-    
-    todaysLessons = todaysFilteredLessons.length > 0 ? todaysFilteredLessons : data || [];
-    lessonsError = error;
-
-  } else {
-    // If no lesson IDs found, fetch all lessons for today
-    const { data, error } = await supabase
-      .from("lessons")
-      .select(`
-        id, 
-        subject_name,
-        subject_color,
-        description,
-        start_date,
-        end_date,
-        completed,
-        objectives,
-        materials_needed,
-        location
-      `)
-      .eq("user_id", user.id) // Parent owns the lesson
-      .gte("start_date", today.toISOString())
-      .lt("start_date", tomorrow.toISOString())
-      .order('start_date', { ascending: true });
-    
-    todaysLessons = data || [];
-    lessonsError = error;
-
-  }
-
-  // Handle any errors in lesson fetching
+  // Fetch today's lessons for the student in a single query
+  const { data: todaysLessons, error: lessonsError } = await supabase
+    .from('lessons')
+    .select(`
+      id,
+      subject_name,
+      subject_color,
+      description,
+      start_date,
+      end_date,
+      completed,
+      objectives,
+      materials_needed,
+      location,
+      lesson_students!inner(student_id)
+    `)
+    .eq('lesson_students.student_id', student.id) // Filter by student
+    .eq('user_id', user.id) // Ensure parent owns the lesson
+    .gte('start_date', today.toISOString()) // Filter for today
+    .lt('start_date', tomorrow.toISOString())
+    .order('start_date', { ascending: true });
+  
   if (lessonsError) {
-    console.error("Error fetching lessons:", lessonsError);
+    console.error("Error fetching today's lessons:", lessonsError);
   }
 
   // Fetch upcoming assignments for the student
 
-  // Get assignments associated with this student
-  const { data: studentAssignments, error: studentAssignmentsError } = await supabase
-    .from("assignment_students")
-    .select("assignment_id")
-    .eq("student_id", student.id);
+  // Fetch upcoming assignments for the student in a single query
+  const { data: upcomingAssignments, error: assignmentsError } = await supabase
+    .from('assignments')
+    .select(`
+      id,
+      title,
+      description,
+      due_date,
+      status,
+      points_possible,
+      points_earned,
+      course_id,
+      assignment_students!inner(student_id)
+    `)
+    .eq('assignment_students.student_id', student.id)
+    .eq('user_id', user.id)
+    .order('due_date', { ascending: true }) // Changed to ascending for a more natural "upcoming" order
+    .limit(10);
 
-  if (studentAssignmentsError) {
-    console.error("Error fetching student assignments:", studentAssignmentsError);
-  }
-
-  // Get array of assignment IDs
-  const assignmentIds = studentAssignments ? studentAssignments.map(sa => sa.assignment_id) : [];
-
-  // Fetch assignments for the student
-  let upcomingAssignments = [];
-
-  if (assignmentIds.length > 0) {
-    // Fetch assignments - grades are stored directly in the assignments table
-    const { data: assignmentsData, error: assignmentsError } = await supabase
-      .from("assignments")
-      .select(`
-        id, 
-        title,
-        description,
-        due_date,
-        status,
-        points_possible,
-        points_earned,
-        course_id
-      `)
-      .eq("user_id", user.id)
-      .in("id", assignmentIds)
-      .order('due_date', { ascending: false })
-      .limit(10);
-
-    if (assignmentsError) {
-      console.error("Error fetching assignments:", assignmentsError);
-    } else if (assignmentsData) {
-      upcomingAssignments = assignmentsData;
-      console.log("Assignments data:", assignmentsData);
-    }
+  if (assignmentsError) {
+    console.error("Error fetching assignments:", assignmentsError);
   }
   
   return (

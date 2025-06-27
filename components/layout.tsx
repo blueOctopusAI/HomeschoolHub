@@ -7,7 +7,7 @@ import { useAuthUser, useAuthLoading } from "@/lib/store"
 import { usePathname } from "next/navigation"
 import { useMemo, useState, useEffect } from "react"
 import { Toaster } from "@/components/ui/toaster"
-import { DataSyncProvider } from "./data-sync-provider"
+
 
 export function Layout({ children }: { children: ReactNode }) {
   // Use separate selectors for auth state
@@ -51,26 +51,22 @@ export function Layout({ children }: { children: ReactNode }) {
   // For auth pages, don't show the app layout (sidebar/topbar)
   if (isAuthPage || isStudentPortalPage) {
     return (
-      <DataSyncProvider>
-        <div className="flex h-screen bg-[#faf9f5]">
-          <main className="flex-1 overflow-auto p-4">{children}</main>
-          <Toaster />
-        </div>
-      </DataSyncProvider>
+      <div className="flex h-screen bg-[#faf9f5]">
+        <main className="flex-1 overflow-auto p-4">{children}</main>
+        <Toaster />
+      </div>
     )
   }
 
   // For regular app pages, show the full layout
   return (
-    <DataSyncProvider>
-      <div className="flex h-screen bg-[#faf9f5]">
-        <MobileSidebar />
-        <div className="flex-1 flex flex-col md:ml-[220px]">
-          <Topbar />
-          <main className="flex-1 overflow-auto p-2 md:p-4">{children}</main>
-        </div>
-        <Toaster />
+    <div className="flex h-screen bg-[#faf9f5]">
+      <MobileSidebar />
+      <div className="flex-1 flex flex-col md:ml-[220px]">
+        <Topbar />
+        <main className="flex-1 overflow-auto p-2 md:p-4">{children}</main>
       </div>
-    </DataSyncProvider>
+      <Toaster />
+    </div>
   )
 }

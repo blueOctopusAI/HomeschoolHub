@@ -107,21 +107,17 @@ export function ChecklistView() {
           return;
         }
 
-        // Get date range for the week
         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
-        // Fetch lessons with student associations
+        // Base query for lessons
         let lessonsQuery = supabase
           .from('lessons')
           .select(`
             *,
-            lesson_students (
+            lesson_students!inner (
               student_id,
-              students (
-                id,
-                name
-              )
+              students (id, name)
             ),
             subjects (
               name,
@@ -132,38 +128,40 @@ export function ChecklistView() {
           .gte('start_date', weekStart.toISOString())
           .lte('start_date', weekEnd.toISOString());
 
-        const { data: lessonsData, error: lessonsError } = await lessonsQuery;
-
-        if (lessonsError) {
-          console.error("Error fetching lessons:", lessonsError);
-        } else {
-          setLessons(lessonsData || []);
-        }
-
-        // Fetch assignments with student associations
+        // Base query for assignments
         let assignmentsQuery = supabase
           .from('assignments')
           .select(`
             *,
-            assignment_students (
+            assignment_students!inner (
               student_id,
-              students (
-                id,
-                name
-              )
+              students (id, name)
             )
           `)
           .eq('user_id', user.id)
           .gte('due_date', weekStart.toISOString())
           .lte('due_date', weekEnd.toISOString());
 
-        const { data: assignmentsData, error: assignmentsError } = await assignmentsQuery;
-
-        if (assignmentsError) {
-          console.error("Error fetching assignments:", assignmentsError);
-        } else {
-          setAssignments(assignmentsData || []);
+        // If a specific student is selected, add the filter to the queries
+        if (selectedDatabaseStudentId) {
+          lessonsQuery = lessonsQuery.eq('lesson_students.student_id', selectedDatabaseStudentId);
+          assignmentsQuery = assignmentsQuery.eq('assignment_students.student_id', selectedDatabaseStudentId);
         }
+
+        // Execute both queries in parallel
+        const [lessonsResult, assignmentsResult] = await Promise.all([
+          lessonsQuery,
+          assignmentsQuery
+        ]);
+
+        const { data: lessonsData, error: lessonsError } = lessonsResult;
+        const { data: assignmentsData, error: assignmentsError } = assignmentsResult;
+
+        if (lessonsError) console.error("Error fetching lessons:", lessonsError);
+        if (assignmentsError) console.error("Error fetching assignments:", assignmentsError);
+
+        setLessons(lessonsData || []);
+        setAssignments(assignmentsData || []);
 
       } catch (error) {
         console.error("Failed to fetch checklist data:", error);
@@ -172,8 +170,16 @@ export function ChecklistView() {
       }
     };
 
-    fetchData();
-  }, [currentDate, refreshKey]);
+    // Only fetch data if we have a valid student selection (either "all" or a specific DB ID)
+    if (selectedStudent === "all" || selectedDatabaseStudentId) {
+      fetchData();
+    } else {
+      // If no student is selected yet, don't show loading, just an empty state
+      setLessons([]);
+      setAssignments([]);
+      setIsLoading(false);
+    }
+  }, [currentDate, refreshKey, selectedStudent, selectedDatabaseStudentId]);
 
   // Get the student name for display
   const studentName = useMemo(() => {
@@ -233,30 +239,17 @@ export function ChecklistView() {
   }, [lessons, assignments])
 
   // Filter items for the selected student and current week
-  const filteredItems = useMemo(() => {
-    return allChecklistItems.filter((item) => {
-      const itemDate = item.type === "lesson" 
-        ? new Date(item.startDate!)
-        : new Date(item.dueDate!)
-      const isInWeek = itemDate >= weekStart && itemDate <= weekEnd
-      const isForSelectedStudent = selectedStudent === "all" || 
-        (selectedDatabaseStudentId && item.studentIds.includes(selectedDatabaseStudentId))
-      return isInWeek && isForSelectedStudent
-    })
-  }, [allChecklistItems, weekStart, weekEnd, selectedStudent, selectedDatabaseStudentId])
+  const filteredItems = allChecklistItems; // Data is already filtered by the API call
 
   // Filter items for today
   const todaysItems = useMemo(() => {
     return allChecklistItems.filter((item) => {
       const itemDate = item.type === "lesson" 
         ? new Date(item.startDate!)
-        : new Date(item.dueDate!)
-      const isToday = isSameDay(itemDate, currentDate)
-      const isForSelectedStudent = selectedStudent === "all" || 
-        (selectedDatabaseStudentId && item.studentIds.includes(selectedDatabaseStudentId))
-      return isToday && isForSelectedStudent
-    })
-  }, [allChecklistItems, currentDate, selectedStudent, selectedDatabaseStudentId])
+        : new Date(item.dueDate!);
+      return isSameDay(itemDate, currentDate);
+    });
+  }, [allChecklistItems, currentDate])
 
   // Group items by day
   const itemsByDay = useMemo(() => {

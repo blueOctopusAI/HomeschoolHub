@@ -84,10 +84,20 @@ export async function addSampleLessons(): Promise<{ success: boolean, message: s
     const studentIds = students.map(student => student.id)
     
     // Create date objects for lessons this week (Monday to Friday)
-    const today = new Date()
-    const dayOfWeek = today.getDay() // 0 (Sunday) to 6 (Saturday)
-    const monday = new Date(today)
-    monday.setDate(today.getDate() - dayOfWeek + 1) // Move to Monday
+    const today = new Date();
+    let dayOfWeek = today.getDay(); // 0 (Sunday) to 6 (Saturday)
+
+    // If it's Saturday or Sunday, advance the date to the next Monday
+    if (dayOfWeek === 6) { // Saturday
+        today.setDate(today.getDate() + 2);
+    } else if (dayOfWeek === 0) { // Sunday
+        today.setDate(today.getDate() + 1);
+    }
+
+    // Now, find the Monday of that week
+    dayOfWeek = today.getDay(); // Re-get the day of the week
+    const monday = new Date(today);
+    monday.setDate(monday.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Adjust to Monday
     
     // Create sample lessons for this week
     const sampleLessons = [
