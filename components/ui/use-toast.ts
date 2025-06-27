@@ -9,13 +9,14 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000 // 5 seconds
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number
 }
 
 const actionTypes = {
@@ -77,6 +78,21 @@ const addToRemoveQueue = (toastId: string) => {
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
+      // Check if a toast with the same message already exists
+      const existingToastIndex = state.toasts.findIndex(
+        (t) => t.description === action.toast.description && t.title === action.toast.title
+      )
+      
+      if (existingToastIndex !== -1) {
+        // Update existing toast instead of adding a duplicate
+        return {
+          ...state,
+          toasts: state.toasts.map((t, index) =>
+            index === existingToastIndex ? { ...t, ...action.toast } : t
+          ),
+        }
+      }
+      
       return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
@@ -163,6 +179,11 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  // Auto-dismiss after 5 seconds by default
+  setTimeout(() => {
+    dismiss()
+  }, props.duration || 5000)
 
   return {
     id: id,

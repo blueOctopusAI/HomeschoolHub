@@ -16,6 +16,17 @@ A comprehensive Next.js application for managing homeschool activities, built wi
 - **Portfolio Builder** - Showcase student work and achievements
 - **Transcript Generation** - Generate academic transcripts with course grades and credits
 
+## Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+- [Architecture Overview](./docs/ARCHITECTURE.md) - System design and patterns
+- [Development Guide](./docs/DEVELOPMENT_GUIDE.md) - Setup and development workflow
+- [Database Schema](./docs/DATABASE_SCHEMA.md) - Complete SQL schema
+- [Features Overview](./docs/FEATURES_OVERVIEW.md) - Feature descriptions
+- [Server Actions](./docs/SERVER_ACTIONS_OVERVIEW.md) - API documentation
+- [All Documentation](./docs/README.md) - Complete documentation index
+
 ## Tech Stack
 
 - **Frontend:** Next.js 15 (App Router), React 18, TypeScript

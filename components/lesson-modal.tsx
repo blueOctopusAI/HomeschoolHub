@@ -32,7 +32,7 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
   const [isSubmitting, setIsSubmitting] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
-  const { toast } = useToast()
+  const { toast, dismiss } = useToast()
   
   // Use useActionState for server actions
   const [createState, createAction] = useActionState(createLesson, undefined)
@@ -98,11 +98,12 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
       onClose()
       router.refresh()
       
-      // Show success toast
+      // Show success toast with proper duration
       toast({
         title: "Success",
         description: state.message || `Lesson ${editingLesson ? 'updated' : 'scheduled'} successfully`,
         variant: "default",
+        duration: 5000, // Explicitly set 5 second duration
       })
     } else if (state?.message && !state?.success && !Object.keys(state?.errors || {}).length) {
       // Show error toast for general errors (not field-specific)
@@ -110,9 +111,20 @@ export function LessonModal({ isOpen, onClose, selectedDate, editingLesson, stud
         title: "Error",
         description: state.message,
         variant: "destructive",
+        duration: 5000, // Explicitly set 5 second duration
       })
     }
   }, [state, onClose, router, toast, editingLesson])
+
+  // Clean up any lingering toasts when modal closes
+  useEffect(() => {
+    return () => {
+      if (!isOpen) {
+        // Dismiss all toasts when modal is closing
+        dismiss()
+      }
+    }
+  }, [isOpen, dismiss])
 
   // Handle input changes - use useCallback to prevent recreation on each render
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
