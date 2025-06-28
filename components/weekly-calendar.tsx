@@ -303,21 +303,25 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
   }, [daysOfWeek, lessons, selectedStudent])
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
-      {daysOfWeek.map((day, index) => {
-        const dayName = format(day, "EEEE").toLowerCase()
-        const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+    <div className="space-y-4">
+      {/* Day headers row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        {daysOfWeek.map((day, index) => {
+          const dayName = format(day, "EEEE").toLowerCase()
+          const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
 
-        return (
-          <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
-            <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
-            <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
-            <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
-          </div>
-        )
-      })}
+          return (
+            <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
+              <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
+              <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
+              <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
+            </div>
+          )
+        })}
+      </div>
 
-      {daysOfWeek.map((day, index) => {
+      {/* Calendar cells row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">      {daysOfWeek.map((day, index) => {
         const dayKey = format(day, "yyyy-MM-dd")
         const dayLessons = lessonsByDay[dayKey] || []
         const dayName = format(day, "EEEE").toLowerCase()
@@ -440,6 +444,7 @@ export function WeeklyCalendar({ initialLessons = [], userStudents = [] }: Weekl
           </div>
         )
       })}
+      </div>
 
       {/* Lesson Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

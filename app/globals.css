@@ -245,6 +245,10 @@
 
 /* Calendar alignment fix for react-day-picker */
 /* Ensure the calendar grid displays correctly */
+.rdp {
+  --rdp-cell-size: 36px;
+}
+
 .rdp-months {
   display: flex;
 }
@@ -252,27 +256,60 @@
 .rdp-month {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .rdp-table {
   width: 100%;
   border-collapse: collapse;
+  margin: 0;
+}
+
+.rdp-head {
+  display: block;
+}
+
+.rdp-head_row {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 0 !important;
+  width: 100% !important;
+  margin-bottom: 0.5rem;
+}
+
+.rdp-head_cell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  height: var(--rdp-cell-size) !important;
 }
 
 .rdp-tbody {
-  display: contents;
+  display: block;
 }
 
 .rdp-week {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0;
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 0 !important;
+  width: 100% !important;
+}
+
+.rdp-cell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  padding: 0 !important;
 }
 
 .rdp-day {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
 }
 
 /* Ensure outside days are visible for proper alignment */

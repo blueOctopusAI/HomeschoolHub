@@ -14,14 +14,14 @@ const DayPickerRoot = DayPicker
 const Calendar = React.forwardRef<
   React.ElementRef<typeof DayPickerRoot>,
   React.ComponentPropsWithoutRef<typeof DayPickerRoot> & CalendarProps
->(({ className, classNames, showOutsideDays = true, ...props }, ref) => {
+>(({ className, classNames, showOutsideDays = true, weekStartsOn = 0, ...props }, ref) => {
   return (
     <DayPickerRoot
       ref={ref}
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
+        month: "space-y-4 w-full",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium text-[#5e8b7e]",
         nav: "space-x-1 flex items-center",
@@ -31,11 +31,11 @@ const Calendar = React.forwardRef<
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-[#5e8b7e]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+        table: "w-full border-collapse",
+        head_row: "grid grid-cols-7 gap-0 mb-2",
+        head_cell: "h-9 w-full text-[#5e8b7e] text-[0.8rem] font-normal flex items-center justify-center",
+        row: "grid grid-cols-7 gap-0",
+        cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 flex items-center justify-center",
         day: cn(
           buttonVariants({ variant: "ghost" }),
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-[#e9f1e7] hover:text-[#5e8b7e]",
@@ -53,6 +53,7 @@ const Calendar = React.forwardRef<
         IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
       }}
       showOutsideDays={showOutsideDays}
+      weekStartsOn={weekStartsOn}
       {...props}
     />
   )

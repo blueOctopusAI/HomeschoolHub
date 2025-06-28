@@ -1,11 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { format } from "date-fns"
+import { format, startOfWeek, addDays } from "date-fns"
 import { ChevronLeft, ChevronRight, Upload, LogOut, User, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useStore } from "@/lib/store"
 import { signOut } from "@/app/auth/actions"
@@ -20,28 +17,7 @@ export function Topbar() {
   const setCurrentDate = useStore((state) => state.setCurrentDate)
   const importLessons = useStore((state) => state.importLessons)
   
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-  const [calendarMonth, setCalendarMonth] = useState<Date>(currentDate)
-
-  // Update calendar month when currentDate changes
-  useEffect(() => {
-    setCalendarMonth(currentDate)
-  }, [currentDate])
-
-  // Update calendar month when popover opens
-  useEffect(() => {
-    if (isCalendarOpen) {
-      setCalendarMonth(currentDate)
-    }
-  }, [isCalendarOpen, currentDate])
-
   // Simplified handlers
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (selectedDate) {
-      setCurrentDate(selectedDate)
-      setIsCalendarOpen(false)
-    }
-  }
 
   const handleStudentChange = (value: string) => {
     if (value !== selectedStudent) {
@@ -58,34 +34,31 @@ export function Topbar() {
 
   // Format date range for display
   const dateRange = (() => {
-    const startOfWeek = new Date(currentDate)
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1) // Start from Monday
+    // Use date-fns startOfWeek to correctly calculate Monday
+    const mondayOfWeek = startOfWeek(currentDate, { weekStartsOn: 1 })
+    const fridayOfWeek = addDays(mondayOfWeek, 4)
 
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 4) // End on Friday (5 days later)
-
-    return `${format(startOfWeek, "MMM d")} - ${format(endOfWeek, "MMM d, yyyy")}`
+    return `${format(mondayOfWeek, "MMM d")} - ${format(fridayOfWeek, "MMM d, yyyy")}`
   })()
 
   // Mobile date range - shorter format
   const mobileDateRange = (() => {
-    const startOfWeek = new Date(currentDate)
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1)
-    return format(startOfWeek, "MMM d")
+    const mondayOfWeek = startOfWeek(currentDate, { weekStartsOn: 1 })
+    return format(mondayOfWeek, "MMM d")
   })()
 
   // Handle previous week navigation
   const handlePreviousWeek = () => {
     const newDate = new Date(currentDate)
     newDate.setDate(currentDate.getDate() - 7)
-    handleDateSelect(newDate)
+    setCurrentDate(newDate)
   }
 
   // Handle next week navigation
   const handleNextWeek = () => {
     const newDate = new Date(currentDate)
     newDate.setDate(currentDate.getDate() + 7)
-    handleDateSelect(newDate)
+    setCurrentDate(newDate)
   }
 
   return (
@@ -103,24 +76,10 @@ export function Topbar() {
             <span className="sr-only">Previous week</span>
           </Button>
 
-          <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] text-xs md:text-sm px-2 md:px-4">
-                <span className="md:hidden">{mobileDateRange}</span>
-                <span className="hidden md:inline">{dateRange}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar 
-                mode="single" 
-                selected={currentDate} 
-                onSelect={handleDateSelect} 
-                month={calendarMonth}
-                onMonthChange={setCalendarMonth}
-                initialFocus 
-              />
-            </PopoverContent>
-          </Popover>
+          <Button variant="outline" className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] text-xs md:text-sm px-2 md:px-4 cursor-default" disabled>
+            <span className="md:hidden">{mobileDateRange}</span>
+            <span className="hidden md:inline">{dateRange}</span>
+          </Button>
 
           <Button
             variant="outline"

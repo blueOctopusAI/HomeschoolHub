@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useTransition } from "react"
+import React, { useState, useCallback, useMemo, useTransition } from "react"
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
 import { Plus, Edit, Trash2, Check, X, Loader2, Calendar, BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "./ui/button"
@@ -311,8 +311,8 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
     [students],
   )
 
-  // Render lesson component
-  const renderLesson = (lesson: Lesson) => {
+  // Render lesson component - memoize this function
+  const renderLesson = useCallback((lesson: Lesson) => {
     const startTime = parseISO(lesson.startDate)
     const endTime = parseISO(lesson.endDate)
     const isCurrentlyProcessing = pendingLessonId === lesson.id;
@@ -405,10 +405,10 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
         )}
       </div>
     )
-  }
+  }, [pendingLessonId, isPending, handleEditLesson, handleToggleComplete, handleDeleteLesson, getStudentName])
 
-  // Render assignment component
-  const renderAssignment = (assignment: Assignment) => {
+  // Render assignment component - memoize this function
+  const renderAssignment = useCallback((assignment: Assignment) => {
     const dueDate = parseISO(assignment.dueDate)
     const statusColor = assignment.status === "Graded" 
       ? "bg-green-100 text-green-800 border-green-200"
@@ -422,44 +422,49 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
         onClick={() => router.push('/assignments')}
         className="rounded-md text-sm px-3 py-2 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 mb-2 bg-blue-50 border-l-4 border-l-blue-500"
       >
-        <div className="flex justify-between items-start">
+        <div className="space-y-1.5">
+          {/* Title and Icon */}
           <div className="flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5 text-blue-600" />
             <span className="font-medium text-blue-900">{assignment.title}</span>
           </div>
-          <Badge className={cn("text-xs px-1.5 py-0", statusColor)}>
-            {assignment.status}
-          </Badge>
-        </div>
-        
-        <div className="text-xs text-blue-700 mt-1 font-medium">
-          Due by {format(dueDate, "h:mm a")}
-        </div>
-
-        {/* Student tags */}
-        {assignment.studentIds.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {assignment.studentIds.map((id: string) => (
-              <Badge
-                key={id}
-                className="bg-blue-100 text-blue-700 rounded-full text-xs px-2 py-0.5 font-normal"
-              >
-                {getStudentName(id)}
-              </Badge>
-            ))}
+          
+          {/* Status and Due Date */}
+          <div className="flex items-center gap-2">
+            <Badge className={cn("text-xs px-2 py-0", statusColor)}>
+              {assignment.status}
+            </Badge>
+            <span className="text-xs text-blue-700">
+              Due by {format(dueDate, "h:mm a")}
+            </span>
           </div>
-        )}
 
-        {assignment.pointsPossible > 0 && (
-          <div className="text-xs mt-1 text-blue-600">
-            {assignment.status === "Graded" && assignment.pointsEarned !== undefined
-              ? `${assignment.pointsEarned}/${assignment.pointsPossible} points`
-              : `${assignment.pointsPossible} points`}
-          </div>
-        )}
+          {/* Student tags */}
+          {assignment.studentIds.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {assignment.studentIds.map((id: string) => (
+                <Badge
+                  key={id}
+                  className="bg-blue-100 text-blue-700 text-xs px-2 py-0 font-normal"
+                >
+                  {getStudentName(id)}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Points */}
+          {assignment.pointsPossible > 0 && (
+            <div className="text-xs text-blue-600">
+              {assignment.status === "Graded" && assignment.pointsEarned !== undefined
+                ? `${assignment.pointsEarned}/${assignment.pointsPossible} points`
+                : `${assignment.pointsPossible} points`}
+            </div>
+          )}
+        </div>
       </div>
     )
-  }
+  }, [router, getStudentName])
 
   // Mobile day view
   const renderMobileDayView = () => {
@@ -509,10 +514,18 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
             {hasEvents ? (
               <div className="space-y-2">
                 {/* Render lessons */}
-                {dayLessons.map(renderLesson)}
+                {dayLessons.map((lesson) => (
+                  <React.Fragment key={lesson.id}>
+                    {renderLesson(lesson)}
+                  </React.Fragment>
+                ))}
                 
                 {/* Render assignments */}
-                {dayAssignments.map(renderAssignment)}
+                {dayAssignments.map((assignment) => (
+                  <React.Fragment key={`assignment-${assignment.id}`}>
+                    {renderAssignment(assignment)}
+                  </React.Fragment>
+                ))}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -560,22 +573,25 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
   // Desktop week view
   const renderDesktopWeekView = () => {
     return (
-      <div className="grid grid-cols-5 gap-4">
-        {/* Day headers */}
-        {daysOfWeek.map((day, index) => {
-          const dayName = format(day, "EEEE").toLowerCase()
-          const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
+      <div className="space-y-4">
+        {/* Day headers row */}
+        <div className="grid grid-cols-5 gap-4">
+          {daysOfWeek.map((day, index) => {
+            const dayName = format(day, "EEEE").toLowerCase()
+            const colorSet = logoColors[dayName as keyof typeof logoColors] || logoColors.monday
 
-          return (
-            <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
-              <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
-              <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
-              <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
-            </div>
-          )
-        })}
+            return (
+              <div key={index} className={cn("text-center p-2 rounded-lg border", colorSet.bg, colorSet.border)}>
+                <div className={cn("font-semibold", colorSet.text)}>{format(day, "EEEE")}</div>
+                <div className={cn("text-lg font-medium", colorSet.text)}>{format(day, "d")}</div>
+                <div className={cn("text-sm", colorSet.text)}>{format(day, "MMMM")}</div>
+              </div>
+            )
+          })}
+        </div>
 
-        {/* Calendar cells */}
+        {/* Calendar cells row */}
+        <div className="grid grid-cols-5 gap-4">
         {daysOfWeek.map((day, index) => {
           const dayKey = format(day, "yyyy-MM-dd")
           const dayLessons = lessonsByDay[dayKey] || []
@@ -599,10 +615,18 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
               {hasEvents ? (
                 <div className="space-y-2">
                   {/* Render lessons */}
-                  {dayLessons.map(renderLesson)}
+                  {dayLessons.map((lesson) => (
+                    <React.Fragment key={lesson.id}>
+                      {renderLesson(lesson)}
+                    </React.Fragment>
+                  ))}
                   
                   {/* Render assignments */}
-                  {dayAssignments.map(renderAssignment)}
+                  {dayAssignments.map((assignment) => (
+                    <React.Fragment key={`assignment-${assignment.id}`}>
+                      {renderAssignment(assignment)}
+                    </React.Fragment>
+                  ))}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center py-6">
@@ -639,6 +663,7 @@ export function CalendarView({ initialLessons = [], userStudents = [], initialAs
             </div>
           )
         })}
+        </div>
       </div>
     )
   }
