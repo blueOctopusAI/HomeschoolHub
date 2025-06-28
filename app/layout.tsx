@@ -4,6 +4,7 @@ import { Nunito } from "next/font/google"
 import "./globals.css"
 import { AuthListener } from "@/components/auth-listener"
 import { CurrentViewUpdater } from "@/components/current-view-updater"
+import { StudentsLoader } from "@/components/students-loader"
 import { Layout as GlobalAppLayout } from "@/components/layout"
 
 const nunito = Nunito({
@@ -29,6 +30,7 @@ export default function RootLayout({
         {/* Non-visual components that sync state */}
         <AuthListener />
         <CurrentViewUpdater />
+        <StudentsLoader />
         
         {/* Main layout wrapper with visual elements */}
         <GlobalAppLayout>
