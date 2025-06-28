@@ -281,54 +281,44 @@ export async function addSampleLessons(): Promise<{ success: boolean, message: s
 const lessonSchema = z.object({
   subjectName: z.string().min(1, "Subject name is required"),
   subjectColor: z.string().min(1, "Subject color is required"),
-  startDate: z.string().refine(value => {
-    try {
-      return !isNaN(new Date(value).getTime());
-    } catch (e) {
-      return false;
-    }
-  }, "Start date must be a valid ISO string"),
-  endDate: z.string().refine(value => {
-    try {
-      return !isNaN(new Date(value).getTime());
-    } catch (e) {
-      return false;
-    }
-  }, "End date must be a valid ISO string"),
+  startDate: z.string().refine(value => !isNaN(new Date(value).getTime()), "Start date must be a valid ISO string"),
+  endDate: z.string().refine(value => !isNaN(new Date(value).getTime()), "End date must be a valid ISO string"),
   studentIds: z.string().min(1, "At least one student must be selected"),
   description: z.string().optional().nullable().transform(val => val || ''),
   objectives: z.string().optional().nullable().transform(val => val || ''),
   materialsNeeded: z.string().optional().nullable().transform(val => val || ''),
   location: z.string().optional().nullable().transform(val => val || ''),
   dayOfWeek: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']).optional().nullable().or(z.literal('')),
+  
+  // Add new optional fields for scheduling
+  scheduleType: z.enum(['single', 'range', 'recurring']).default('single'),
+  recurrencePattern: z.enum(['daily', 'weekly', 'custom', 'none', 'biweekly']).optional().nullable(),
+  recurrenceEndDate: z.string().optional().nullable(),
+  selectedDays: z.string().optional().nullable().transform(val => val || 'Monday,Tuesday,Wednesday,Thursday,Friday'),
 });
 
 /**
- * Creates a new lesson in the database
+ * Creates one or more lessons in the database based on the schedule type.
  */
 export async function createLesson(
   prevState: ActionResult | undefined,
   formData: FormData
 ): Promise<ActionResult> {
+  console.log("=== createLesson server action called ===");
+  console.log("FormData entries:", Array.from(formData.entries()));
+  
   try {
-    // Create Supabase client
-    const supabase = await createSupabaseServerActionClient()
-    
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    // Check if user is authenticated
+    const supabase = await createSupabaseServerActionClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
-      return {
-        success: false,
-        message: "User not authenticated."
-      }
+      return { success: false, message: "User not authenticated." };
     }
-    
-    // Extract lesson fields from form data
+
+    // --- 1. Data Extraction & Validation ---
     const lessonData = {
       subjectName: formData.get('subjectName')?.toString() || '',
-      subjectColor: formData.get('subjectColor')?.toString() || '',
+      subjectColor: formData.get('subjectColor')?.toString() || '#5e8b7e',
       startDate: formData.get('startDate')?.toString() || '',
       endDate: formData.get('endDate')?.toString() || '',
       studentIds: formData.get('studentIds')?.toString() || '',
@@ -336,121 +326,174 @@ export async function createLesson(
       objectives: formData.get('objectives')?.toString() || '',
       materialsNeeded: formData.get('materialsNeeded')?.toString() || '',
       location: formData.get('location')?.toString() || '',
-      dayOfWeek: formData.get('dayOfWeek')?.toString() || '',
-    }
+      scheduleType: formData.get('scheduleType')?.toString() || 'single',
+      recurrencePattern: formData.get('recurrencePattern')?.toString() || 'daily',
+      recurrenceEndDate: formData.get('recurrenceEndDate')?.toString() || '',
+      selectedDays: formData.get('selectedDays')?.toString() || '',
+    };
     
-    // Validate the lesson data
-    const validationResult = lessonSchema.safeParse(lessonData)
+    console.log("Extracted lesson data:", lessonData);
     
+    // Use a more specific schema for validation to ensure required fields are present
+    const validationResult = lessonSchema.safeParse(lessonData);
     if (!validationResult.success) {
-      const errors = validationResult.error.flatten().fieldErrors
-      return {
-        success: false,
-        message: "Please correct the errors below.",
-        errors
-      }
+      const errors = validationResult.error.flatten().fieldErrors;
+      console.log("Validation errors:", errors);
+      return { success: false, message: "Please correct the errors below.", errors };
     }
     
-    // Validate that endDate is after startDate
-    const startDate = new Date(validationResult.data.startDate)
-    const endDate = new Date(validationResult.data.endDate)
-    
-    if (endDate <= startDate) {
-      return {
-        success: false,
-        message: "End date must be after start date.",
-        errors: {
-          endDate: ["End date must be after start date."]
-        }
-      }
-    }
-    
-    // Prepare the validated data for insertion
-    const { studentIds, ...restOfData } = validationResult.data
-    
-    // Split the comma-separated student IDs
-    const studentIdArray = studentIds.split(',').filter(Boolean)
-    
+    const { studentIds, scheduleType, recurrencePattern, recurrenceEndDate, selectedDays, ...restOfData } = validationResult.data;
+    const studentIdArray = studentIds.split(',').filter(Boolean);
+    const selectedDaysArray = selectedDays.split(',').filter(Boolean);
+
     if (studentIdArray.length === 0) {
-      return {
-        success: false,
-        message: "At least one student must be selected.",
-        errors: {
-          studentIds: ["At least one student must be selected."]
+      return { success: false, message: "At least one student must be selected.", errors: { studentIds: ["At least one student must be selected."] } };
+    }
+
+    // --- 2. Lesson Generation Logic ---
+    const lessonsToInsert = [];
+    const startDate = new Date(restOfData.startDate);
+    const endDate = new Date(restOfData.endDate);
+
+    if (scheduleType === 'single') {
+        lessonsToInsert.push({
+            ...restOfData,
+            user_id: user.id,
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString(),
+            day_of_week: startDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            completed: false,
+        });
+    } else if (scheduleType === 'range') {
+        let loopDate = new Date(startDate);
+        const finalDate = new Date(recurrenceEndDate || endDate);
+        
+        // Get the time difference from the original lesson
+        const timeDiff = endDate.getTime() - startDate.getTime();
+        const startHours = startDate.getHours();
+        const startMinutes = startDate.getMinutes();
+        
+        while (loopDate <= finalDate) {
+            const dayName = loopDate.toLocaleDateString('en-US', { weekday: 'long' });
+            if (selectedDaysArray.includes(dayName)) {
+                const lessonStart = new Date(loopDate);
+                lessonStart.setHours(startHours, startMinutes, 0, 0);
+                const lessonEnd = new Date(lessonStart.getTime() + timeDiff);
+                
+                lessonsToInsert.push({
+                    ...restOfData,
+                    user_id: user.id,
+                    start_date: lessonStart.toISOString(),
+                    end_date: lessonEnd.toISOString(),
+                    day_of_week: dayName,
+                    completed: false,
+                });
+            }
+            loopDate.setDate(loopDate.getDate() + 1);
         }
-      }
+    } else if (scheduleType === 'recurring') {
+        let loopDate = new Date(startDate);
+        const finalDate = new Date(recurrenceEndDate || endDate);
+        const timeDiff = endDate.getTime() - startDate.getTime();
+
+        while (loopDate <= finalDate) {
+            const dayName = loopDate.toLocaleDateString('en-US', { weekday: 'long' });
+            if (recurrencePattern === 'daily' && selectedDaysArray.includes(dayName)) {
+                const lessonStart = new Date(loopDate);
+                const lessonEnd = new Date(lessonStart.getTime() + timeDiff);
+                lessonsToInsert.push({
+                    ...restOfData,
+                    user_id: user.id,
+                    start_date: lessonStart.toISOString(),
+                    end_date: lessonEnd.toISOString(),
+                    day_of_week: dayName,
+                    completed: false,
+                });
+            } else if (recurrencePattern === 'weekly' && loopDate.getDay() === startDate.getDay()) {
+                const lessonStart = new Date(loopDate);
+                const lessonEnd = new Date(lessonStart.getTime() + timeDiff);
+                lessonsToInsert.push({
+                    ...restOfData,
+                    user_id: user.id,
+                    start_date: lessonStart.toISOString(),
+                    end_date: lessonEnd.toISOString(),
+                    day_of_week: lessonStart.toLocaleDateString('en-US', { weekday: 'long' }),
+                    completed: false,
+                });
+            } else if (recurrencePattern === 'custom' && selectedDaysArray.includes(dayName)) {
+                // Custom pattern: create lessons only on selected days
+                const lessonStart = new Date(loopDate);
+                const lessonEnd = new Date(lessonStart.getTime() + timeDiff);
+                lessonsToInsert.push({
+                    ...restOfData,
+                    user_id: user.id,
+                    start_date: lessonStart.toISOString(),
+                    end_date: lessonEnd.toISOString(),
+                    day_of_week: dayName,
+                    completed: false,
+                });
+            }
+            loopDate.setDate(loopDate.getDate() + (recurrencePattern === 'weekly' ? 7 : 1));
+        }
+    }
+
+    if (lessonsToInsert.length === 0) {
+      return { success: false, message: "No lessons to create. Check your date range or recurrence settings." };
     }
     
-    // Get the day of the week if not provided or empty
-    let day = restOfData.dayOfWeek
-    if (!day || day === '') {
-      day = new Date(startDate).toLocaleDateString('en-US', { weekday: 'long' })
-    }
-    
-    // Insert the lesson into the database
-    const { data: newLesson, error } = await supabase
-    .from('lessons')
-    .insert({
-    user_id: user.id,
-    subject_name: restOfData.subjectName,
-    subject_color: restOfData.subjectColor,
-    description: restOfData.description,
-    start_date: restOfData.startDate,
-    end_date: restOfData.endDate,
-    day_of_week: day,
-    completed: false,
-    location: restOfData.location,
-    materials_needed: restOfData.materialsNeeded,
-    objectives: restOfData.objectives
-    })
-    .select('id')
-    .single()
-    
+    // --- 3. Database Insertion ---
+    // Prepare lessons for database insertion
+    const lessonsForDb = lessonsToInsert.map(lesson => ({
+      user_id: lesson.user_id,
+      subject_name: lesson.subject_name,
+      subject_color: lesson.subject_color,
+      description: lesson.description,
+      start_date: lesson.start_date,
+      end_date: lesson.end_date,
+      day_of_week: lesson.day_of_week,
+      completed: lesson.completed,
+      location: lesson.location,
+      materials_needed: lesson.materials_needed,
+      objectives: lesson.objectives
+    }));
+
+    console.log("Lessons to insert:", lessonsForDb);
+
+    const { data: newLessons, error } = await supabase
+      .from('lessons')
+      .insert(lessonsForDb)
+      .select('id');
+
     if (error) {
-      console.error("Error creating lesson:", error)
-      return {
-        success: false,
-        message: error.message || "Failed to create lesson."
-      }
+      console.error("Error creating lessons:", error);
+      return { success: false, message: error.message || "Failed to create lessons." };
     }
+
+    // Create student associations for all newly created lessons
+    const lessonStudentAssociations = newLessons.flatMap(lesson => 
+      studentIdArray.map(studentId => ({
+        lesson_id: lesson.id,
+        student_id: studentId,
+      }))
+    );
     
-    // Insert the student lessons
-    const lessonStudentPromises = studentIdArray.map(studentId => {
-      return supabase
-        .from('lesson_students')
-        .insert({
-          lesson_id: newLesson.id,
-          student_id: studentId
-        })
-    })
-    
-    // Wait for all student lessons to be created
-    const studentResults = await Promise.all(lessonStudentPromises)
-    
-    // Check if any student lesson insertions failed
-    const studentErrors = studentResults.filter(result => result.error)
-    if (studentErrors.length > 0) {
-      console.error("Errors creating student lessons:", studentErrors)
-      return {
-        success: false,
-        message: "Lesson created but some student associations failed."
-      }
+    if (lessonStudentAssociations.length > 0) {
+        const { error: studentError } = await supabase.from('lesson_students').insert(lessonStudentAssociations);
+        if (studentError) {
+            console.error("Errors creating student lessons:", studentError);
+            return { success: false, message: "Lessons created but student associations failed." };
+        }
     }
-    
-    // Revalidate both calendar and student pages
-    revalidatePath('/calendar')
-    revalidatePath('/student', 'layout')
-    
-    return {
-      success: true,
-      message: "Lesson created successfully."
-    }
+
+    revalidatePath('/calendar');
+    revalidatePath('/student', 'layout');
+    revalidatePath('/assignments');
+
+    return { success: true, message: `Successfully created ${newLessons.length} lesson(s).` };
+
   } catch (error) {
-    console.error("Lesson creation error:", error)
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "An unexpected error occurred."
-    }
+    console.error("Lesson creation error:", error);
+    return { success: false, message: error instanceof Error ? error.message : "An unexpected error occurred." };
   }
 }
 
