@@ -1,12 +1,15 @@
 "use client"
 
-import { format, startOfWeek, addDays } from "date-fns"
-import { ChevronLeft, ChevronRight, Upload, LogOut, User, ExternalLink } from "lucide-react"
+import { format, startOfWeek, addDays, endOfWeek, isSameWeek } from "date-fns"
+import { ChevronLeft, ChevronRight, Upload, LogOut, User, ExternalLink, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { useStore } from "@/lib/store"
 import { signOut } from "@/app/auth/actions"
 import Link from "next/link"
+import { useState } from "react"
 
 export function Topbar() {
   // Get state and actions from Zustand store
@@ -16,6 +19,9 @@ export function Topbar() {
   const setSelectedStudent = useStore((state) => state.setSelectedStudent)
   const setCurrentDate = useStore((state) => state.setCurrentDate)
   const importLessons = useStore((state) => state.importLessons)
+  
+  // State for calendar popover
+  const [calendarOpen, setCalendarOpen] = useState(false)
   
   // Simplified handlers
 
@@ -76,10 +82,46 @@ export function Topbar() {
             <span className="sr-only">Previous week</span>
           </Button>
 
-          <Button variant="outline" className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] text-xs md:text-sm px-2 md:px-4 cursor-default" disabled>
-            <span className="md:hidden">{mobileDateRange}</span>
-            <span className="hidden md:inline">{dateRange}</span>
-          </Button>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7] text-xs md:text-sm px-2 md:px-4 flex items-center gap-1"
+              >
+                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="md:hidden">{mobileDateRange}</span>
+                <span className="hidden md:inline">{dateRange}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <CalendarComponent
+                mode="single"
+                selected={currentDate}
+                onSelect={(date) => {
+                  if (date) {
+                    // Only navigate if it's a weekday
+                    if (date.getDay() !== 0 && date.getDay() !== 6) {
+                      setCurrentDate(date)
+                      setCalendarOpen(false)
+                    }
+                  }
+                }}
+                weekStartsOn={1}
+                disabled={(date) => date.getDay() === 0 || date.getDay() === 6}
+                modifiers={{
+                  week: (date) => isSameWeek(date, currentDate, { weekStartsOn: 1 })
+                }}
+                modifiersClassNames={{
+                  week: "bg-[#e9f1e7] text-[#5e8b7e] hover:bg-[#e9f1e7]"
+                }}
+                footer={
+                  <div className="p-2 text-sm text-center text-[#5e8b7e]">
+                    Click any weekday to navigate to that week
+                  </div>
+                }
+              />
+            </PopoverContent>
+          </Popover>
 
           <Button
             variant="outline"

@@ -1,0 +1,23 @@
+/* Custom calendar styles to hide day headers */
+.rdp-head {
+  display: none !important;
+}
+
+.rdp-head_row {
+  display: none !important;
+}
+
+.rdp-head_cell {
+  display: none !important;
+}
+
+/* Ensure the calendar week highlighting works */
+.rdp-day_selected {
+  background-color: #5e8b7e;
+  color: white;
+}
+
+.rdp-day_selected:hover {
+  background-color: #5e8b7e;
+  color: white;
+}
