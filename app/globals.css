@@ -183,31 +183,46 @@
 
 /* Print styles */
 @media print {
-  .no-print {
-    display: none !important;
-  }
-
-  .print-only {
-    display: block !important;
-  }
-
-  body {
-    background-color: white; /* Ensure print body bg is white */
-  }
-
+  /* Hide these specific elements */
+  .no-print,
   .sidebar,
-  .topbar { /* Ensure topbar also has .no-print or is targeted here */
+  .topbar,
+  nav,
+  header,
+  footer {
     display: none !important;
   }
 
-  main {
-    margin-left: 0 !important;
+  /* Reset body styles for print */
+  body {
+    background-color: white !important;
+    margin: 0 !important;
     padding: 0 !important;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the print report and its children */
+  #compliance-print-report {
+    display: block !important;
+    visibility: visible;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  #compliance-print-report * {
+    visibility: visible;
   }
 
   /* Print styles for progress report */
   @page {
-    margin: 1cm;
+    margin: 0.5in;
+    size: letter;
   }
 
   table {

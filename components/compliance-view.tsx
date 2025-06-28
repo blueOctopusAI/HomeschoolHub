@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { ClipboardCheck, Calendar as CalendarIcon, Trash2 } from "lucide-react"
+import { ClipboardCheck, Calendar as CalendarIcon, Trash2, Printer } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
@@ -269,10 +269,23 @@ export function ComplianceView({ userStudents, initialLoggedHours }: ComplianceV
             </form>
           </div>
           
-          <div className="bg-white rounded-md shadow-sm p-4">
-            <h2 className="text-xl font-medium text-[#5e8b7e] mb-4">
-              Logged Hours for {selectedStudent.name}
-            </h2>
+          <div className="bg-white rounded-md shadow-sm p-4" id="compliance-report">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-medium text-[#5e8b7e]">
+                Logged Hours for {selectedStudent.name}
+              </h2>
+              {filteredLoggedHours.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.print()}
+                  className="no-print border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7]"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Report
+                </Button>
+              )}
+            </div>
             
             {filteredLoggedHours.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -287,7 +300,7 @@ export function ComplianceView({ userStudents, initialLoggedHours }: ComplianceV
                     <TableHead>Subject</TableHead>
                     <TableHead>Hours</TableHead>
                     <TableHead>Notes</TableHead>
-                    <TableHead className="w-16">Actions</TableHead>
+                    <TableHead className="w-16 no-print">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -297,7 +310,7 @@ export function ComplianceView({ userStudents, initialLoggedHours }: ComplianceV
                       <TableCell>{hour.subject_name}</TableCell>
                       <TableCell>{hour.hours_spent}</TableCell>
                       <TableCell className="max-w-xs truncate">{hour.notes || '-'}</TableCell>
-                      <TableCell>
+                      <TableCell className="no-print">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -313,6 +326,125 @@ export function ComplianceView({ userStudents, initialLoggedHours }: ComplianceV
                 </TableBody>
               </Table>
             )}
+          </div>
+
+          {/* Hidden print-only section for formatted compliance report */}
+          <div 
+            id="compliance-print-report" 
+            style={{ display: 'none' }}
+          >
+            <div style={{ padding: '32px', backgroundColor: 'white', fontFamily: 'Arial, sans-serif' }}>
+              {/* Report Header */}
+              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#000' }}>HOMESCHOOL EDUCATIONAL HOURS REPORT</h1>
+                <p style={{ fontSize: '14px', color: '#666' }}>Compliance Documentation</p>
+              </div>
+              
+              {/* Student Information Section */}
+              <div style={{ marginBottom: '24px', padding: '16px', border: '1px solid #ccc' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#000' }}>Student Information</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <p style={{ fontSize: '14px', color: '#000', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: '500' }}>Student Name:</span> {selectedStudent.name}
+                    </p>
+                    {selectedStudent.gradeLevel && (
+                      <p style={{ fontSize: '14px', color: '#000' }}>
+                        <span style={{ fontWeight: '500' }}>Grade Level:</span> {selectedStudent.gradeLevel}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '14px', color: '#000', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: '500' }}>Report Generated:</span> {format(new Date(), 'PPPP')}
+                    </p>
+                    <p style={{ fontSize: '14px', color: '#000' }}>
+                      <span style={{ fontWeight: '500' }}>Academic Year:</span> {new Date().getFullYear()}-{new Date().getFullYear() + 1}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Summary Statistics */}
+              <div style={{ marginBottom: '24px', padding: '16px', border: '1px solid #ccc' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#000' }}>Summary of Educational Hours</h2>
+                {(() => {
+                  const totalHours = filteredLoggedHours.reduce((sum, hour) => sum + hour.hours_spent, 0)
+                  const uniqueSubjects = [...new Set(filteredLoggedHours.map(h => h.subject_name))]
+                  const subjectHours = uniqueSubjects.map(subject => ({
+                    subject,
+                    hours: filteredLoggedHours
+                      .filter(h => h.subject_name === subject)
+                      .reduce((sum, h) => sum + h.hours_spent, 0)
+                  }))
+                  
+                  return (
+                    <div>
+                      <p style={{ fontSize: '14px', marginBottom: '8px', color: '#000' }}>
+                        <span style={{ fontWeight: '500' }}>Total Hours Logged:</span> {totalHours} hours
+                      </p>
+                      <p style={{ fontSize: '14px', marginBottom: '12px', color: '#000' }}>
+                        <span style={{ fontWeight: '500' }}>Subjects Covered:</span> {uniqueSubjects.length}
+                      </p>
+                      <div style={{ marginTop: '12px' }}>
+                        <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#000' }}>Hours by Subject:</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          {subjectHours.map(({ subject, hours }) => (
+                            <p key={subject} style={{ fontSize: '14px', color: '#000' }}>
+                              {subject}: {hours} hours
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+              
+              {/* Detailed Log */}
+              <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#000' }}>Detailed Educational Log</h2>
+                <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ccc' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f3f4f6' }}>
+                      <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#000' }}>Date</th>
+                      <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#000' }}>Subject</th>
+                      <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#000' }}>Hours</th>
+                      <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#000' }}>Activities/Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLoggedHours
+                      .sort((a, b) => new Date(a.log_date).getTime() - new Date(b.log_date).getTime())
+                      .map((hour) => (
+                        <tr key={hour.id}>
+                          <td style={{ border: '1px solid #ccc', padding: '8px', fontSize: '14px', color: '#000' }}>{format(new Date(hour.log_date), 'MM/dd/yyyy')}</td>
+                          <td style={{ border: '1px solid #ccc', padding: '8px', fontSize: '14px', color: '#000' }}>{hour.subject_name}</td>
+                          <td style={{ border: '1px solid #ccc', padding: '8px', fontSize: '14px', color: '#000' }}>{hour.hours_spent}</td>
+                          <td style={{ border: '1px solid #ccc', padding: '8px', fontSize: '14px', color: '#000' }}>{hour.notes || '-'}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Footer/Signature Section */}
+              <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #ccc' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                  <div>
+                    <div style={{ borderBottom: '1px solid #666', marginBottom: '8px', height: '32px' }}></div>
+                    <p style={{ fontSize: '14px', color: '#000' }}>Parent/Guardian Signature</p>
+                  </div>
+                  <div>
+                    <div style={{ borderBottom: '1px solid #666', marginBottom: '8px', height: '32px' }}></div>
+                    <p style={{ fontSize: '14px', color: '#000' }}>Date</p>
+                  </div>
+                </div>
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '32px', textAlign: 'center' }}>
+                  This report certifies that the above educational hours have been completed as part of a homeschool curriculum.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
