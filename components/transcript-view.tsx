@@ -411,11 +411,6 @@ export function TranscriptView() {
     window.print()
   }
 
-  // Handle PDF export
-  const handleExportPDF = () => {
-    alert("PDF export functionality would be implemented here")
-  }
-
   if (selectedStudentId === "all") {
     return (
       <div className="p-6">
@@ -524,16 +519,6 @@ export function TranscriptView() {
           >
             <Printer className="mr-2 h-4 w-4" />
             Print
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            className="border-[#5e8b7e] text-[#5e8b7e] hover:bg-[#e9f1e7]"
-          >
-            <FileDown className="mr-2 h-4 w-4" />
-            Export PDF
           </Button>
         </div>
       </div>
