@@ -242,3 +242,40 @@
     display: none !important;
   }
 }
+
+/* Calendar alignment fix for react-day-picker */
+/* Ensure the calendar grid displays correctly */
+.rdp-months {
+  display: flex;
+}
+
+.rdp-month {
+  display: flex;
+  flex-direction: column;
+}
+
+.rdp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rdp-tbody {
+  display: contents;
+}
+
+.rdp-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.rdp-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure outside days are visible for proper alignment */
+.day-outside {
+  visibility: visible !important;
+}

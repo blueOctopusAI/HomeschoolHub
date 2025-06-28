@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { ChevronLeft, ChevronRight, Upload, LogOut, User, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,13 +20,24 @@ export function Topbar() {
   const setCurrentDate = useStore((state) => state.setCurrentDate)
   const importLessons = useStore((state) => state.importLessons)
   
-  const [date, setDate] = useState<Date>(currentDate)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState<Date>(currentDate)
+
+  // Update calendar month when currentDate changes
+  useEffect(() => {
+    setCalendarMonth(currentDate)
+  }, [currentDate])
+
+  // Update calendar month when popover opens
+  useEffect(() => {
+    if (isCalendarOpen) {
+      setCalendarMonth(currentDate)
+    }
+  }, [isCalendarOpen, currentDate])
 
   // Simplified handlers
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
-      setDate(selectedDate)
       setCurrentDate(selectedDate)
       setIsCalendarOpen(false)
     }
@@ -65,15 +76,15 @@ export function Topbar() {
 
   // Handle previous week navigation
   const handlePreviousWeek = () => {
-    const newDate = new Date(date)
-    newDate.setDate(date.getDate() - 7)
+    const newDate = new Date(currentDate)
+    newDate.setDate(currentDate.getDate() - 7)
     handleDateSelect(newDate)
   }
 
   // Handle next week navigation
   const handleNextWeek = () => {
-    const newDate = new Date(date)
-    newDate.setDate(date.getDate() + 7)
+    const newDate = new Date(currentDate)
+    newDate.setDate(currentDate.getDate() + 7)
     handleDateSelect(newDate)
   }
 
@@ -100,7 +111,14 @@ export function Topbar() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={date} onSelect={handleDateSelect} initialFocus />
+              <Calendar 
+                mode="single" 
+                selected={currentDate} 
+                onSelect={handleDateSelect} 
+                month={calendarMonth}
+                onMonthChange={setCalendarMonth}
+                initialFocus 
+              />
             </PopoverContent>
           </Popover>
 

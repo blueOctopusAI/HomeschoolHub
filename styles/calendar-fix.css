@@ -1,0 +1,25 @@
+/* Calendar alignment fix */
+.rdp-tbody .rdp-week:first-child {
+  /* Ensures proper grid alignment for the first week */
+}
+
+/* Hide outside days if needed */
+.day-outside {
+  visibility: visible !important;
+}
+
+/* Ensure grid layout */
+.rdp-tbody {
+  display: contents;
+}
+
+.rdp-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.rdp-day_button {
+  width: 100%;
+  height: 100%;
+}
